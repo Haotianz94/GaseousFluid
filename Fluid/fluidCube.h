@@ -6,6 +6,9 @@
 
 #ifdef SIMULATION_2D
 
+
+class SparseMatf;
+
 struct Pos
 {
 	int x;
@@ -32,7 +35,10 @@ private:
 
 	int fluidNum;
 	int **neighbor;
+	int *neighNum;
 	int *pos2index;
+
+	SparseMatf* A;
 
 	float max_d;
 	float max_vx;

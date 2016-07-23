@@ -4,15 +4,16 @@
 #include <iostream>
 
 #define SIMULATION_2D 1
-//#define CONNECTED 1
-//#define OBSTACLE 1
+#define CONNECTED 1
+#define OBSTACLE 1
 #define OUTPUT 1
+//#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
-	#define _W 3 
-	#define VISBLEW 600
-	#define _H 2 //30
-	#define GRIDSIZE 50 //15
+	#define _W 300 
+	#define VISBLEW 1600
+	#define _H 20 //30
+	#define GRIDSIZE 20 //15
 	#define DIFFUSION 0.01
 	#define VISCOSITY 0.01
 	#define TIMESTEP 0.01

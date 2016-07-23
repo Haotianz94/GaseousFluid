@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "display.h"
 
-//#include "vl\VLf.h"
-
 int main(int argc, char* argv[])
 {
 	PRINT("Program Starting");
@@ -17,3 +15,4 @@ int main(int argc, char* argv[])
 	return 0;
 }
 //1.  h2;  1/ dt
+//2.  Store A
