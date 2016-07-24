@@ -30,21 +30,22 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	type = new GRIDTYPE [size];
 	pos2index = new int [size]; 
 
+	neighNum = new int [size];
 	neighbor = new int* [size];
 	for(int i = 0; i < size; i ++)
 		neighbor[i] = new int[4];
 	
-	dir[0] = Pos(1, 0);
+	dir[0] = Pos(0, -1);
 	dir[1] = Pos(-1, 0);
-	dir[2] = Pos(0, 1);
-	dir[3] = Pos(0, -1);
+	dir[2] = Pos(1, 0);
+	dir[3] = Pos(0, 1);
 	for(int i = 0; i < size; i++)
 	{
 		pos2index[i] = -1;
 		type[i] = SOLID;
 	}
-	for(int y = 0; y <= _H+1; y++)
-		type[IX(_W+1, y)] = AIR;	
+	//for(int y = 0; y <= _H+1; y++)
+	//	type[IX(_W+1, y)] = AIR;	
 
 #ifdef OBSTACLE
 	int cx = 30;
@@ -74,10 +75,17 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 						break;
 					}
 			}
-			else
+			else //FLUID
 			{
+				neighNum[IX(x, y)] = 0;
 				for(int i = 0; i < 4; i++)
-					neighbor[IX(x,y)][i] = pos2index[IX(x+dir[i].x, y+dir[i].y)];
+				{
+					int xx = x+dir[i].x;
+					int yy = y+dir[i].y;
+					neighbor[IX(x,y)][i] = pos2index[IX(xx, yy)];
+					if(type[IX(xx,yy)] != SOLID)
+						neighNum[IX(x, y)] ++;
+				}
 			}
 #else
 	fluidNum = 0;
@@ -89,9 +97,57 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 		}
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
+		{
+			neighNum[IX(x, y)] = 0;
 			for(int i = 0; i < 4; i++)
-				neighbor[IX(x,y)][i] = pos2index[IX(x+dir[i].x, y+dir[i].y)];
+			{
+				int xx = x+dir[i].x;
+				int yy = y+dir[i].y;
+				neighbor[IX(x,y)][i] = pos2index[IX(xx, yy)];
+				if(type[IX(xx,yy)] != SOLID)
+					neighNum[IX(x, y)] ++;
+			}
+		}
+				
 #endif
+
+	//init Matrix
+	A = new SparseMatf(fluidNum, fluidNum);
+	int index = 0;
+	for(int y = 1; y <= _H; y++)
+		for(int x = 1; x <= _W; x++)
+		{
+			if(type[IX(x, y)] != FLUID)
+				continue;
+
+			//b[index] = h2 / dt * 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
+
+			SparseVecf A0(fluidNum);
+			A0.Begin();
+			for(int i = 0; i < 2; i++)
+			{
+				int neighid = neighbor[IX(x,y)][i];
+				if(neighid != -1)
+				{
+					A0.AddNZElt(neighid, -1);
+				}
+			}
+			A0.AddNZElt(index, neighNum[IX(x, y)]);
+			for(int i = 2; i < 4; i++)
+			{
+				int neighid = neighbor[IX(x,y)][i];
+				if(neighid != -1)
+				{
+					A0.AddNZElt(neighid, -1);
+				}
+			}
+			A0.End();
+			//cout<<A0<<endl;
+			//A0.SetElts(index, neighs, VL_SV_END);
+			(*A)[index++] = A0;
+		}
+
+	//cout<<*A<<endl;
 
 	memset(d, 0, sizeof(float) * size);
 	memset(Vx, 0, sizeof(float) * size);
@@ -115,6 +171,7 @@ FluidCube2D::~FluidCube2D()
 	for(int i = 0; i < size; i++)
 		delete[] neighbor[i];
 	delete[] neighbor;
+	delete[] neighNum;
 }
 
 void FluidCube2D::dens_step(float *amount)
@@ -190,9 +247,10 @@ void FluidCube2D::projectVelosity()
 	max_vx = 0;
 	max_vy = 0;
 	float *div = Vy0;
-	
+
+#ifdef GAUSS_SEIDEL
 	//Gauss_Seidel
-/*	float *p = Vx0;
+	float *p = Vx0;
 	//float *div = Vy0;
 
 	for(int y = 1; y <= _H; y++)
@@ -239,7 +297,7 @@ void FluidCube2D::projectVelosity()
 			for(int y = _N; y >= 1; y--)
 				for(int x = 1; x <= _N; x++)
 					p[IX(x, y)] = (div[IX(x,y)] + p[IX(x-1,y)] + p[IX(x+1,y)] + p[IX(x,y-1)] + p[IX(x,y+1)]) / 4;
-		}
+		}*/
 		set_bnd(0, p);
 	}
  
@@ -258,22 +316,20 @@ void FluidCube2D::projectVelosity()
 				max_vy = fabsf(Vy[IX(x, y)]);
 		}
 	set_bnd(1, Vx);
-	set_bnd(2, Vy);*/
-
-
+	set_bnd(2, Vy);
+#else
 	//Conjugate Gradient
 
 	//check div before project
-	for(int y = 1; y <= _H; y++)
+	/*for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
 			div[IX(x, y)] = 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
 		}
-	output(div);
+	output(div);*/
 
-	SparseMatf A(fluidNum, fluidNum);
 	Vecf b(fluidNum);
 	int index = 0;
 	for(int y = 1; y <= _H; y++)
@@ -282,42 +338,39 @@ void FluidCube2D::projectVelosity()
 			if(type[IX(x, y)] != FLUID)
 				continue;
 
-			b[index] = h2 / dt * 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
-			
+			b[index] =  -0.5 * h * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
+
 			SparseVecf A0(fluidNum);
-			int neighs = 0;
 			A0.Begin();
-			A0.AddNZElt(0, 2);
-			for(int i = 0; i < 4; i++)
+			for(int i = 0; i < 2; i++)
 			{
 				int neighid = neighbor[IX(x,y)][i];
 				if(neighid != -1)
 				{
 					A0.AddNZElt(neighid, -1);
-					neighs ++;
 				}
 			}
-			//only for temporary should change neighid
-			if(x == _W)
-				neighs ++;
-			//A0.AddNZElt(index, neighs);
+			A0.AddNZElt(index, neighNum[IX(x, y)]);
+			for(int i = 2; i < 4; i++)
+			{
+				int neighid = neighbor[IX(x,y)][i];
+				if(neighid != -1)
+				{
+					A0.AddNZElt(neighid, -1);
+				}
+			}
 			A0.End();
-			cout<<A0<<endl;
+			//cout<<A0<<endl;
 			//A0.SetElts(index, neighs, VL_SV_END);
-			A[index++] = A0;
+			(*A)[index++] = A0;
 		}
-	
-	cout<<A<<endl;
-
-	Vecf p(fluidNum);
-	p = b;
-	SolveConjGrad(A, p, b, 1e-6);
-	//SolveOverRelax(A, p, b, 1e-6);
+	Vecf p(b);
+	SolveConjGrad(*A, p, b, 1e-4);
 	
 	//for(int i = 100; i < 110; i++)
 	//	cout<<p[i]<<' ';
 	//cout<<endl;
-
+	//cout<<p<<endl;
 
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
@@ -338,7 +391,7 @@ void FluidCube2D::projectVelosity()
 				p1 = p[pos2index[IX(x-1,y)]];
 			else
 				p1 = p[pos2index[IX(x,y)]];
-			Vx[IX(x, y)] -= 0.5 * dt * (p2 - p1);
+			Vx[IX(x, y)] -= 0.5 * (p2 - p1) / h;
 			
 			if(type[IX(x, y+1)] == AIR)
 				p2 = 0;
@@ -352,7 +405,7 @@ void FluidCube2D::projectVelosity()
 				p1 = p[pos2index[IX(x,y-1)]];
 			else
 				p1 = p[pos2index[IX(x,y)]];
-			Vy[IX(x, y)] -= 0.5 * dt * (p2 - p1);
+			Vy[IX(x, y)] -= 0.5 * (p2 - p1) / h;
 
 			if(fabsf(Vx[IX(x, y)]) > max_vx)
 				max_vx = fabsf(Vx[IX(x, y)]);
@@ -364,7 +417,7 @@ void FluidCube2D::projectVelosity()
 
 
 	//check div after project
-	for(int y = 1; y <= _H; y++)
+	/*for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
@@ -373,7 +426,9 @@ void FluidCube2D::projectVelosity()
 		}
 	set_bnd(0, div);
 	output(div);
-	int stop = 0;
+	int stop = 0;*/
+#endif
+
 }
 
 void FluidCube2D::add_source(float *x, float *amount)
@@ -534,6 +589,9 @@ void FluidCube2D::set_bnd(int b, float *x)
 		x[IX(i, 0)] = b==2? -x[IX(i,1)] : x[IX(i,1)];
 		x[IX(i, _H+1)] = b==2? -x[IX(i,_H)] : x[IX(i,_H)];
  	}
+
+#ifndef CONNECTED
+	
 	for(int i = 1; i <= _H; i++)
 	{
 		x[IX(0, i)] = b==1? -x[IX(1,i)] : x[IX(1,i)];
@@ -543,6 +601,8 @@ void FluidCube2D::set_bnd(int b, float *x)
 	x[IX(0, _H+1)] = 0.5 * (x[IX(1, _H+1)] + x[IX(0, _H)]);
 	x[IX(_W+1, 0)] = 0.5 * (x[IX(_W, 0)] + x[IX(_W+1, 1)]);
 	x[IX(_W+1, _H+1)] = 0.5 * (x[IX(_W, _H+1)] + x[IX(_W+1, _H)]);
+
+#endif
 }
 
 void FluidCube2D::simulate(bool idle)
@@ -663,8 +723,8 @@ void FluidCube2D::draw_velo(int i, int j, float vx, float vy)
 	//float dx = 0.5 * GRIDSIZE * vx / vl;
 	//float dy = 0.5 * GRIDSIZE * vy / vl;
 
-	float dx = 3 * GRIDSIZE * vx ;
-	float dy = 3 * GRIDSIZE * vy ;
+	float dx = 20 * GRIDSIZE * vx ;
+	float dy = 20 * GRIDSIZE * vy ;
 
 	glBegin(GL_LINES);
 	glColor3f(1.0f, 0.0f, 0.0f);
@@ -672,9 +732,9 @@ void FluidCube2D::draw_velo(int i, int j, float vx, float vy)
 	//glColor3f(0.0f, 0.0f, 1.0f);
 	glVertex2f(cx + dx, cy + dy);
 	
-	/*glColor3f(0.0f, 0.0f, 1.0f);
+	glColor3f(0.0f, 0.0f, 1.0f);
 	glVertex2f(cx, cy);
-	glVertex2f(cx - dx, cy - dy);*/
+	glVertex2f(cx - vx/vl*GRIDSIZE*0.2, cy - vy/vl*GRIDSIZE*0.2);
 	glEnd();
 }
 

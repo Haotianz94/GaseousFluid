@@ -277,7 +277,7 @@ void timer(int value) {
 		for(int y = 1; y <= _H; y++)
 		{
 			cube->d0[IX(1, y)] = 100;
-			cube->Vx0[IX(1, y)] = 10000;  //10000~50000 for 2 vertexes
+			cube->Vx0[IX(1, y)] = 5000;  //10000~50000 for 2 vertexes
 			//cube->Vy0[IX(1, y)] = 0;
 		}
 		cube->simulate(false);
