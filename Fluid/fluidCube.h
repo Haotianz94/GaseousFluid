@@ -31,14 +31,21 @@ private:
 	float *Vy;
 	GRIDTYPE *type;
 	std::vector<Pos> obstacle;
+	
+	//Projection using Conjugate Gradient
 	Pos dir[4];
-
 	int fluidNum;
 	int **neighbor;
 	int *neighNum;
 	int *pos2index;
-
 	SparseMatf* A;
+
+	//Advection using BFECC
+	float *d_bf;
+	float *Vx_b;
+	float *Vx_f;
+	float *Vy_b;
+	float *Vy_f;
 
 	float max_d;
 	float max_vx;
@@ -64,7 +71,7 @@ private:
 	
 	void add_source(float *x, float *amount);
 	void diffuse(int b, float *u0, float *u, float diffusion);
-	void advect(int b, float *u0, float *u);
+	void advect(int b, float *u0, float *u, bool backward);
 	void swap(float *x0, float *x);
 	void set_bnd(int b, float *x);
 

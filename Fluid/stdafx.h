@@ -6,18 +6,18 @@
 #define SIMULATION_2D 1
 #define CONNECTED 1
 #define OBSTACLE 1
-#define OUTPUT 1
+//#define OUTPUT 1
 //#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
-	#define _W 300 
+	#define _W 600 
 	#define VISBLEW 1600
-	#define _H 20 //30
-	#define GRIDSIZE 20 //15
+	#define _H 30 //30
+	#define GRIDSIZE 10 //15
 	#define DIFFUSION 0.01
 	#define VISCOSITY 0.01
 	#define TIMESTEP 0.01
-	#define ITERATION 10
+	#define ITERATION 30
 	#define FRAMERATE 32
 	#define DRAGSCALE 100
 

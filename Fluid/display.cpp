@@ -269,7 +269,7 @@ void timer(int value) {
 
 #ifdef SIMULATION_2D
 
-	if(count %50 == 0)
+	if(count %20 == 0)
 	{
 		memset(cube->d0, 0, sizeof(float) * cube->size);
 		memset(cube->Vx0, 0, sizeof(float) * cube->size);

@@ -11,7 +11,7 @@
 FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 {
 	size = (_W+2) * (_H+2);
-	h = 1.0 / _H;
+	h = 1 / _H;
 	h2 = h * h;
 	dt = dtime;
 	diff = diffusion;
@@ -28,17 +28,25 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	Vx0 = new float [size]; 
 	Vy0 = new float [size]; 
 	type = new GRIDTYPE [size];
-	pos2index = new int [size]; 
 
-	neighNum = new int [size];
-	neighbor = new int* [size];
-	for(int i = 0; i < size; i ++)
-		neighbor[i] = new int[4];
-	
+	//Advection using BFECC
+	d_bf = new float [size];
+	Vx_b = new float [size];
+	Vx_f = new float [size];
+	Vy_b = new float [size];
+	Vy_f = new float [size];
+
+	//Projection using Conjugate Gradient
 	dir[0] = Pos(0, -1);
 	dir[1] = Pos(-1, 0);
 	dir[2] = Pos(1, 0);
 	dir[3] = Pos(0, 1);
+	pos2index = new int [size]; 
+	neighNum = new int [size];
+	neighbor = new int* [size];
+	for(int i = 0; i < size; i ++)
+		neighbor[i] = new int[4];
+
 	for(int i = 0; i < size; i++)
 	{
 		pos2index[i] = -1;
@@ -48,7 +56,7 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	//	type[IX(_W+1, y)] = AIR;	
 
 #ifdef OBSTACLE
-	int cx = 30;
+	int cx = 15;
 	int cy = _H / 2;
 	int R = _H * 0.25;
 	fluidNum = 0;
@@ -146,7 +154,6 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 			//A0.SetElts(index, neighs, VL_SV_END);
 			(*A)[index++] = A0;
 		}
-
 	//cout<<*A<<endl;
 
 	memset(d, 0, sizeof(float) * size);
@@ -156,6 +163,11 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	memset(Vx0, 0, sizeof(float) * size);
 	memset(Vy0, 0, sizeof(float) * size);
 
+	memset(d_bf, 0, sizeof(float) * size);
+	memset(Vx_b, 0, sizeof(float) * size);
+	memset(Vx_f, 0, sizeof(float) * size);
+	memset(Vy_b, 0, sizeof(float) * size);
+	memset(Vy_f, 0, sizeof(float) * size);
 }
 
 FluidCube2D::~FluidCube2D()
@@ -167,11 +179,19 @@ FluidCube2D::~FluidCube2D()
 	delete [] Vx0;
 	delete [] Vy0;
 	delete [] type;
+
 	delete [] pos2index;
 	for(int i = 0; i < size; i++)
 		delete[] neighbor[i];
-	delete[] neighbor;
-	delete[] neighNum;
+	delete [] neighbor;
+	delete [] neighNum;
+
+	delete [] d_bf;
+	delete [] Vx_b;
+	delete [] Vx_f;
+	delete [] Vy_b;
+	delete [] Vy_f;
+
 }
 
 void FluidCube2D::dens_step(float *amount)
@@ -203,7 +223,11 @@ void FluidCube2D::diffuseDensity()
 
 void FluidCube2D::advectDensity()
 {
-	advect(0, d0, d);
+	advect(0, d0, d, true);
+	advect(0, d, d_bf, false);
+	for(int i = 0; i < size; i++)
+		d0[i] = d0[i] + (d0[i] - d_bf[i]) * 0.5;
+	advect(0, d0, d, true);
 }
 
 void FluidCube2D::vel_step(float *amountX, float *amountY)
@@ -237,8 +261,20 @@ void FluidCube2D::diffuseVelosity()
 
 void FluidCube2D::advectVelosity()
 {
-	advect(1, Vx0, Vx);
-	advect(2, Vy0, Vy);
+	advect(1, Vx0, Vx_b, true);
+	advect(1, Vx_b, Vx_f, false);
+	output(Vx0);
+	output(Vx_f);
+	for(int i = 0; i < size; i++)
+		Vx0[i] = Vx0[i] + (Vx0[i] - Vx_f[i]) * 0.5;
+	advect(1, Vx0, Vx, true);
+
+
+	advect(2, Vy0, Vy_b, true);
+	advect(2, Vy_b, Vy_f, false);
+	for(int i = 0; i < size; i++)
+		Vy0[i] = Vy0[i] + (Vy0[i] - Vy_f[i]) * 0.5;
+	advect(2, Vy0, Vy, true);
 }
 
 void FluidCube2D::projectVelosity()
@@ -265,7 +301,7 @@ void FluidCube2D::projectVelosity()
 	set_bnd(0, div);
 	set_bnd(0, p);
 
-	output(div);
+	//output(div);
 	
 	for(int k = 0; k < ITERATION; k++)
 	{
@@ -365,7 +401,7 @@ void FluidCube2D::projectVelosity()
 			(*A)[index++] = A0;
 		}
 	Vecf p(b);
-	SolveConjGrad(*A, p, b, 1e-4);
+	SolveConjGrad(*A, p, b, 1e-7);
 	
 	//for(int i = 100; i < 110; i++)
 	//	cout<<p[i]<<' ';
@@ -424,7 +460,6 @@ void FluidCube2D::projectVelosity()
 				continue;
 			div[IX(x, y)] = 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
 		}
-	set_bnd(0, div);
 	output(div);
 	int stop = 0;*/
 #endif
@@ -483,7 +518,7 @@ void FluidCube2D::diffuse(int b, float *u0, float *u, float diffusion)
 	}
 }
 
-void FluidCube2D::advect(int b, float *u0, float *u)
+void FluidCube2D::advect(int b, float *u0, float *u, bool backward)
 {
 	max_d = 0;
 	float dt0 = dt / h;
@@ -493,8 +528,17 @@ void FluidCube2D::advect(int b, float *u0, float *u)
 			if(type[IX(x, y)] != FLUID)
 				continue;
 
-			float x0 = x - dt0*Vx[IX(x,y)];
-			float y0 = y - dt0*Vy[IX(x,y)];
+			float x0, y0;
+			if(backward)
+			{
+				x0 = x - dt0*Vx[IX(x,y)];
+				y0 = y - dt0*Vy[IX(x,y)];
+			}
+			else
+			{
+				x0 = x + dt0*Vx[IX(x,y)];
+				y0 = y + dt0*Vy[IX(x,y)];
+			}
 
 #ifdef CONNECTED
 			if(x0 <= 0)
@@ -624,7 +668,7 @@ void FluidCube2D::output(float *u)
 {
 #ifdef OUTPUT 
 	for(int y = 10; y <= 15; y++)
-		for(int x = 10; x <= 15; x++)
+		for(int x = 40; x <= 45; x++)
 		{
 			std::cout<<u[IX(x, y)]<<' ';
 			if(x == 15)
@@ -720,11 +764,11 @@ void FluidCube2D::draw_velo(int i, int j, float vx, float vy)
 	float dx = 0.6 * GRIDSIZE * (logf(fabsf(vx))+LOG) / max_v * ((vx>0)? 1:-1);
 	float dy = 0.6 * GRIDSIZE * (logf(fabsf(vy))+LOG) / max_v * ((vy>0)? 1:-1);*/
 	
-	//float dx = 0.5 * GRIDSIZE * vx / vl;
-	//float dy = 0.5 * GRIDSIZE * vy / vl;
+	float dx = 0.5 * GRIDSIZE * vx / vl;
+	float dy = 0.5 * GRIDSIZE * vy / vl;
 
-	float dx = 20 * GRIDSIZE * vx ;
-	float dy = 20 * GRIDSIZE * vy ;
+	//float dx = 20 * GRIDSIZE * vx ;
+	//float dy = 20 * GRIDSIZE * vy ;
 
 	glBegin(GL_LINES);
 	glColor3f(1.0f, 0.0f, 0.0f);
