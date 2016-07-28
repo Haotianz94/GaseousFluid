@@ -12,8 +12,9 @@
 FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 {
 	size = (_W+2) * (_H+2);
-	h = 1.0 / _H;
+	h = _L / _H;
 	h2 = h * h;
+	hi = 1 / h;
 	dt = dtime;
 	diff = diffusion;
 	visc = viscosity;
@@ -31,11 +32,8 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	type = new GRIDTYPE [size];
 
 	//Advection using BFECC
-	d_bf = new float [size];
-	Vx_b = new float [size];
-	Vx_f = new float [size];
-	Vy_b = new float [size];
-	Vy_f = new float [size];
+	fai_b = new float [size];
+	fai_f = new float [size];
 
 	//Projection using Conjugate Gradient
 	dir[0] = Pos(0, -1);
@@ -177,11 +175,8 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	memset(Vx0, 0, sizeof(float) * size);
 	memset(Vy0, 0, sizeof(float) * size);
 
-	memset(d_bf, 0, sizeof(float) * size);
-	memset(Vx_b, 0, sizeof(float) * size);
-	memset(Vx_f, 0, sizeof(float) * size);
-	memset(Vy_b, 0, sizeof(float) * size);
-	memset(Vy_f, 0, sizeof(float) * size);
+	memset(fai_b, 0, sizeof(float) * size);
+	memset(fai_f, 0, sizeof(float) * size);
 }
 
 FluidCube2D::~FluidCube2D()
@@ -200,12 +195,8 @@ FluidCube2D::~FluidCube2D()
 	delete [] neighbor;
 	delete [] neighNum;
 
-	delete [] d_bf;
-	delete [] Vx_b;
-	delete [] Vx_f;
-	delete [] Vy_b;
-	delete [] Vy_f;
-
+	delete [] fai_b;
+	delete [] fai_f;
 }
 
 void FluidCube2D::dens_step(float *amount)
@@ -231,11 +222,11 @@ void FluidCube2D::diffuseDensity()
 
 void FluidCube2D::advectDensity()
 {
-	advect(0, d0, d, true);
-	advect(0, d, d_bf, false);
+	advect(0, d0, fai_b, Vx, Vy, true);
+	advect(0, fai_b, fai_f, Vx, Vy, false);
 	for(int i = 0; i < size; i++)
-		d0[i] = d0[i] + (d0[i] - d_bf[i]) * 0.5;
-	advect(0, d0, d, true);
+		fai_b[i] = d0[i] + (d0[i] - fai_f[i]) * 0.5;
+	advect(0, fai_b, d, Vx, Vy, true);
 }
 
 void FluidCube2D::vel_step(float *amountX, float *amountY)
@@ -269,20 +260,18 @@ void FluidCube2D::diffuseVelosity()
 
 void FluidCube2D::advectVelosity()
 {
-	advect(1, Vx0, Vx_b, true);
-	advect(1, Vx_b, Vx_f, false);
-	output(Vx0);
-	output(Vx_f);
+	advect(1, Vx0, fai_b, Vx0, Vy0, true);
+	advect(1, fai_b, fai_f, Vx0, Vy0, false);
 	for(int i = 0; i < size; i++)
-		Vx0[i] = Vx0[i] + (Vx0[i] - Vx_f[i]) * 0.5;
-	advect(1, Vx0, Vx, true);
+		fai_b[i] = Vx0[i] + (Vx0[i] - fai_f[i]) * 0.5;
+	advect(1, fai_b, Vx, Vx0, Vy0, true);
 
 
-	advect(2, Vy0, Vy_b, true);
-	advect(2, Vy_b, Vy_f, false);
+	advect(2, Vy0, fai_b, Vx0, Vy0, true);
+	advect(2, fai_b, fai_f, Vx0, Vy0, false);
 	for(int i = 0; i < size; i++)
-		Vy0[i] = Vy0[i] + (Vy0[i] - Vy_f[i]) * 0.5;
-	advect(2, Vy0, Vy, true);
+		fai_b[i] = Vy0[i] + (Vy0[i] - fai_f[i]) * 0.5;
+	advect(2, fai_b, Vy, Vx0, Vy0, true);
 }
 
 void FluidCube2D::projectVelosity()
@@ -351,8 +340,8 @@ void FluidCube2D::projectVelosity()
 			if(type[IX(x, y)] != FLUID)
 				continue;
 
-			Vx[IX(x, y)] -= 0.5 * (p[IX(x+1,y)] - p[IX(x-1,y)]) / h;
-			Vy[IX(x, y)] -= 0.5 * (p[IX(x,y+1)] - p[IX(x,y-1)]) / h;
+			Vx[IX(x, y)] -= 0.5 * (p[IX(x+1,y)] - p[IX(x-1,y)]) * hi;
+			Vy[IX(x, y)] -= 0.5 * (p[IX(x,y+1)] - p[IX(x,y-1)]) * hi;
 
 			if(fabsf(Vx[IX(x, y)]) > max_vx)
 				max_vx = fabsf(Vx[IX(x, y)]);
@@ -411,7 +400,7 @@ void FluidCube2D::projectVelosity()
 				p1 = p[pos2index[IX(x-1,y)]];
 			else
 				p1 = p[pos2index[IX(x,y)]];
-			Vx[IX(x, y)] -= 0.5 * (p2 - p1) / h;
+			Vx[IX(x, y)] -= 0.5 * (p2 - p1) * hi;
 			
 			if(type[IX(x, y+1)] == AIR)
 				p2 = 0;
@@ -425,7 +414,7 @@ void FluidCube2D::projectVelosity()
 				p1 = p[pos2index[IX(x,y-1)]];
 			else
 				p1 = p[pos2index[IX(x,y)]];
-			Vy[IX(x, y)] -= 0.5 * (p2 - p1) / h;
+			Vy[IX(x, y)] -= 0.5 * (p2 - p1) * hi;
 
 			if(fabsf(Vx[IX(x, y)]) > max_vx)
 				max_vx = fabsf(Vx[IX(x, y)]);
@@ -501,7 +490,7 @@ void FluidCube2D::diffuse(int b, float *u0, float *u, float diffusion)
 	}
 }
 
-void FluidCube2D::advect(int b, float *u0, float *u, bool backward)
+void FluidCube2D::advect(int b, float *u0, float *u, float *vx, float *vy, bool backward)
 {
 	max_d = 0;
 	float dt0 = dt / h;
@@ -514,13 +503,13 @@ void FluidCube2D::advect(int b, float *u0, float *u, bool backward)
 			float x0, y0;
 			if(backward)
 			{
-				x0 = x - dt0*Vx[IX(x,y)];
-				y0 = y - dt0*Vy[IX(x,y)];
+				x0 = x - dt0*vx[IX(x,y)];
+				y0 = y - dt0*vy[IX(x,y)];
 			}
 			else
 			{
-				x0 = x + dt0*Vx[IX(x,y)];
-				y0 = y + dt0*Vy[IX(x,y)];
+				x0 = x + dt0*vx[IX(x,y)];
+				y0 = y + dt0*vy[IX(x,y)];
 			}
 
 #ifdef CONNECTED

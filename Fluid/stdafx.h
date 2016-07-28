@@ -10,9 +10,10 @@
 //#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
-	#define _W 1000 
-	#define VISBLEW 1600
+	#define _W 1000
 	#define _H 50 
+	#define VISBLEW 1600
+	#define _L 1.0
 	#define GRIDSIZE 2
 	#define DIFFUSION 0.01
 	#define VISCOSITY 0.01
@@ -24,6 +25,8 @@
 	#define DENSITY 100
 	#define SPEED 10000
 	#define OBSTACLEX 30
+
+	//The viscosity matters a lot
 
 #ifdef CONNECTED
 	#define IX(x, y) ( (x) == 0? _W + (y) * (_W+2) : ((x) == _W+1? 1 + (y) * (_W+2) : (x) + (y) * (_W+2)) )
@@ -68,7 +71,8 @@ enum GRIDTYPE
 /*
 	#define _W 1000 
 	#define VISBLEW 1600
-	#define _H 50 
+	#define _H 50
+	#define _L 1.0
 	#define GRIDSIZE 2
 	#define DIFFUSION 0.01
 	#define VISCOSITY 0.01

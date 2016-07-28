@@ -287,7 +287,7 @@ void timer(int value) {
 	{
 		glutPostRedisplay();
 	}
-	if(count < 2025)
+	if(count < 1025)
 		count ++;
 #else
 	//if(count == 5)

@@ -20,6 +20,7 @@ class FluidCube2D
 private:
 	float h;
 	float h2;
+	float hi;
 	float dt;
 	float diff;
 	float visc;
@@ -40,11 +41,8 @@ private:
 	Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 
 	//Advection using BFECC
-	float *d_bf;
-	float *Vx_b;
-	float *Vx_f;
-	float *Vy_b;
-	float *Vy_f;
+	float *fai_b;
+	float *fai_f;
 
 	float max_d;
 	float max_vx;
@@ -70,7 +68,7 @@ private:
 	
 	void add_source(float *x, float *amount);
 	void diffuse(int b, float *u0, float *u, float diffusion);
-	void advect(int b, float *u0, float *u, bool backward);
+	void advect(int b, float *u0, float *u, float* vx, float* vy, bool backward);
 	void swap(float *x0, float *x);
 	void set_bnd(int b, float *x);
 
