@@ -269,15 +269,16 @@ void timer(int value) {
 
 #ifdef SIMULATION_2D
 
-	if(count %20 == 0)
+	if(count %FLOWTIME == 0)
 	{
 		memset(cube->d0, 0, sizeof(float) * cube->size);
 		memset(cube->Vx0, 0, sizeof(float) * cube->size);
 		memset(cube->Vy0, 0, sizeof(float) * cube->size);
+		//for(int x = 1; x <= 5; x++)
 		for(int y = 1; y <= _H; y++)
 		{
-			cube->d0[IX(1, y)] = 100;
-			cube->Vx0[IX(1, y)] = 5000;  //10000~50000 for 2 vertexes
+			cube->d0[IX(1, y)] = DENSITY;
+			cube->Vx0[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
 			//cube->Vy0[IX(1, y)] = 0;
 		}
 		cube->simulate(false);
@@ -286,7 +287,7 @@ void timer(int value) {
 	{
 		glutPostRedisplay();
 	}
-	if(count < 2010)
+	if(count < 2025)
 		count ++;
 #else
 	//if(count == 5)
@@ -333,13 +334,3 @@ void timer(int value) {
 	//glutPostRedisplay();
 	glutTimerFunc(FRAMERATE, timer, 0); // next timer call milliseconds later
 }
-
-/*int IX(float x, float y)
-	{
-		if(x == 0)
-			return _W + y * (_W + 2);
-		else if(x == _W+1)
-			return 1 + y * (_W + 2);
-		else
-			return x + y * (_W + 2);
-	}*/

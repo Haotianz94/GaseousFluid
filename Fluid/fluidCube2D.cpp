@@ -2,16 +2,17 @@
 #include "fluidCube.h"
 #include <memory.h>
 #include <math.h>
+#include <Eigen\Eigen>
 //#include "vl\VLfd.h"
-#include "vl\VLf.h"
-#include "vl\Solve.h"
+//#include "vl\VLf.h"
+//#include "vl\Solve.h"
 
 #ifdef SIMULATION_2D
 
 FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 {
 	size = (_W+2) * (_H+2);
-	h = 1 / _H;
+	h = 1.0 / _H;
 	h2 = h * h;
 	dt = dtime;
 	diff = diffusion;
@@ -52,13 +53,21 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 		pos2index[i] = -1;
 		type[i] = SOLID;
 	}
-	//for(int y = 0; y <= _H+1; y++)
-	//	type[IX(_W+1, y)] = AIR;	
+
+#ifdef CONNECTED
+	type[IX(100, _H+1)] = AIR;
+#else
+	for(int y = 0; y <= _H+1; y++)
+	{
+		type[IX(_W+1, y)] = AIR;
+		//type[IX(0, y)] = AIR;
+	}
+#endif
 
 #ifdef OBSTACLE
-	int cx = 15;
+	int cx = OBSTACLEX;
 	int cy = _H / 2;
-	int R = _H * 0.25;
+	int R = _H * 0.1;
 	fluidNum = 0;
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
@@ -120,7 +129,8 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 #endif
 
 	//init Matrix
-	A = new SparseMatf(fluidNum, fluidNum);
+	A = Eigen::SparseMatrix<double>(fluidNum, fluidNum);         // default is column major
+	A.reserve(Eigen::VectorXi::Constant(fluidNum, 5));
 	int index = 0;
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
@@ -128,33 +138,37 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 			if(type[IX(x, y)] != FLUID)
 				continue;
 
-			//b[index] = h2 / dt * 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
-
-			SparseVecf A0(fluidNum);
-			A0.Begin();
+			//SparseVecf A0(fluidNum);
+			//A0.Begin();
 			for(int i = 0; i < 2; i++)
 			{
 				int neighid = neighbor[IX(x,y)][i];
 				if(neighid != -1)
 				{
-					A0.AddNZElt(neighid, -1);
+					//A0.AddNZElt(neighid, -1);
+					A.insert(index, neighid) = -1;
 				}
 			}
-			A0.AddNZElt(index, neighNum[IX(x, y)]);
+			//A0.AddNZElt(index, neighNum[IX(x, y)]);
+			A.insert(index, index) = neighNum[IX(x, y)];
 			for(int i = 2; i < 4; i++)
 			{
 				int neighid = neighbor[IX(x,y)][i];
 				if(neighid != -1)
 				{
-					A0.AddNZElt(neighid, -1);
+					//A0.AddNZElt(neighid, -1);
+					A.insert(index, neighid) = -1;
 				}
 			}
-			A0.End();
+			//A0.End();
 			//cout<<A0<<endl;
 			//A0.SetElts(index, neighs, VL_SV_END);
-			(*A)[index++] = A0;
+			//(*A)[index++] = A0;
+			index ++;
 		}
-	//cout<<*A<<endl;
+	//std::cout<<A<<std::endl;
+	A.makeCompressed();
+	solver.compute(A);
 
 	memset(d, 0, sizeof(float) * size);
 	memset(Vx, 0, sizeof(float) * size);
@@ -200,15 +214,9 @@ void FluidCube2D::dens_step(float *amount)
 	
 	SWAP(d0, d);
 	diffuseDensity();
-	
-	//REPORT(Vx[IX(10,10)]);
-	//REPORT(Vy[IX(10,10)]);
 
 	SWAP(d0, d);
 	advectDensity();
-	
-	//REPORT(d0[IX(10,10)]);
-	//REPORT(d[IX(10,10)]);
 }
 
 void FluidCube2D::addDensity(float *amount)
@@ -233,7 +241,7 @@ void FluidCube2D::advectDensity()
 void FluidCube2D::vel_step(float *amountX, float *amountY)
 {
 	addVelocity(amountX, amountY);
-	
+
 	SWAP(Vx0, Vx);
 	SWAP(Vy0, Vy);
 	diffuseVelosity();
@@ -366,7 +374,7 @@ void FluidCube2D::projectVelosity()
 		}
 	output(div);*/
 
-	Vecf b(fluidNum);
+	Eigen::VectorXd b(fluidNum);
 	int index = 0;
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
@@ -374,34 +382,10 @@ void FluidCube2D::projectVelosity()
 			if(type[IX(x, y)] != FLUID)
 				continue;
 
-			b[index] =  -0.5 * h * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
-
-			SparseVecf A0(fluidNum);
-			A0.Begin();
-			for(int i = 0; i < 2; i++)
-			{
-				int neighid = neighbor[IX(x,y)][i];
-				if(neighid != -1)
-				{
-					A0.AddNZElt(neighid, -1);
-				}
-			}
-			A0.AddNZElt(index, neighNum[IX(x, y)]);
-			for(int i = 2; i < 4; i++)
-			{
-				int neighid = neighbor[IX(x,y)][i];
-				if(neighid != -1)
-				{
-					A0.AddNZElt(neighid, -1);
-				}
-			}
-			A0.End();
-			//cout<<A0<<endl;
-			//A0.SetElts(index, neighs, VL_SV_END);
-			(*A)[index++] = A0;
+			b[index++] =  -0.5 * h * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
 		}
-	Vecf p(b);
-	SolveConjGrad(*A, p, b, 1e-7);
+	Eigen::VectorXd p(fluidNum);
+	p = solver.solve(b);
 	
 	//for(int i = 100; i < 110; i++)
 	//	cout<<p[i]<<' ';
@@ -450,7 +434,6 @@ void FluidCube2D::projectVelosity()
 		}
 	set_bnd(1, Vx);
 	set_bnd(2, Vy);
-
 
 	//check div after project
 	/*for(int y = 1; y <= _H; y++)
@@ -556,13 +539,26 @@ void FluidCube2D::advect(int b, float *u0, float *u, bool backward)
 			else if(y0 > _H + 0.5)
 				y0 = _H + 0.5;
 
-			//if(!BOUNDED(x0, y0))
-			//	continue;
-
 			int i0 = int(x0), i1 = i0 + 1;
 			int j0 = int(y0), j1 = j0 + 1;
 			float s1 = x0 - i0, s0 = 1 - s1;
 			float t1 = y0 - j0, t0 = 1 - t1;
+
+			//if trace into solid, up it unchanged
+			int nonFluidNum = 0;
+			if(type[IX(i0, j0)] != FLUID)
+				nonFluidNum ++;
+			if(type[IX(i0, j1)] != FLUID)
+				nonFluidNum ++;
+			if(type[IX(i1, j0)] != FLUID)
+				nonFluidNum ++;
+			if(type[IX(i1, j1)] != FLUID)
+				nonFluidNum ++;
+			if(nonFluidNum >= 3)
+			{
+				u[IX(x,y)] = u0[IX(x,y)];
+				continue;
+			}
 
 			u[IX(x,y)] = s0 * (t0*u0[IX(i0,j0)] + t1*u0[IX(i0,j1)]) +
 						 s1 * (t0*u0[IX(i1,j0)] + t1*u0[IX(i1,j1)]);
@@ -636,11 +632,28 @@ void FluidCube2D::set_bnd(int b, float *x)
 
 #ifndef CONNECTED
 	
-	for(int i = 1; i <= _H; i++)
+	/*for(int i = 1; i <= _H; i++)
 	{
 		x[IX(0, i)] = b==1? -x[IX(1,i)] : x[IX(1,i)];
 		//x[IX(_W+1, i)] = b==1? -x[IX(_W,i)] : x[IX(_W,i)];
+ 	}*/
+
+	for(int i = 1; i <= _H; i++)
+	{
+		//x[IX(0, i)] = b==2? 0 : x[IX(1,i)];
+		//x[IX(_W+1, i)] = b==2? 0 : x[IX(_W,i)];
+		if(b != 1)
+		{
+			x[IX(_W+1, i)] = 0;
+			x[IX(0, i)] = 0;
+		}
+		else
+		{
+			x[IX(_W+1, i)] = x[IX(_W-1, i)] + x[IX(_W, i-1)] - x[IX(_W, i+1)];
+			x[IX(0, i)] = x[IX(2, i)] + x[IX(1, i+1)] - x[IX(1, i-1)];
+		}
  	}
+
 	x[IX(0, 0)] = 0.5 * (x[IX(1, 0)] + x[IX(0, 1)]);
 	x[IX(0, _H+1)] = 0.5 * (x[IX(1, _H+1)] + x[IX(0, _H)]);
 	x[IX(_W+1, 0)] = 0.5 * (x[IX(_W, 0)] + x[IX(_W+1, 1)]);
@@ -657,8 +670,26 @@ void FluidCube2D::simulate(bool idle)
 		memset(Vx0, 0, sizeof(float) * size);
 		memset(Vy0, 0, sizeof(float) * size);
 	}
+	/*
+	for(int y = 1; y <= _H; y++)
+		{
+			//d[IX(1, y)] = DENSITY;
+			Vx[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
+			Vy[IX(1, y)] = 0;
+		}
+	*/
 
 	vel_step(Vx0, Vy0);
+
+	/*
+	for(int y = 1; y <= _H; y++)
+		{
+			d[IX(1, y)] = DENSITY;
+			//Vx[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
+			//Vy[IX(1, y)] = 0;
+		}
+	*/
+
 	dens_step(d0);
 
 	draw_dens();
@@ -712,8 +743,7 @@ void FluidCube2D::draw_dens()
 	REPORT(max_vy);
 
 	//
-	//max_d *= 2.0/3;
-
+	//max_d = 0.15;
 	int W = VISBLEW/GRIDSIZE;
 	for(int i = 0; i < W; i++)
 		for(int j = 0; j < _H; j++)
@@ -724,14 +754,27 @@ void FluidCube2D::draw_dens()
 
 			if(type[IX(x, y)] == SOLID)
 				glColor3f(0, 0.5, 0); 
-			else if(d[IX(x, y)] == 0)
+			/*else if(d[IX(x, y)] == 0)
 				glColor3f(0, 0, 0);
 			else
 			{
 				//color = (log(d[IX(x, (h-y))]) - min) / gap;
 				color = d[IX(x, y)] / max_d;
 				glColor3f(color, color, color);
+			}*/
+			//vorticity
+			else
+			{
+				float w = 0.5 * (Vy[IX(x+1, y)] - Vy[IX(x-1, y)]);
+						  - 0.5 * (Vx[IX(x, y+1)] - Vx[IX(x, y-1)]);
+				//if(fabs(w) < 0.7)
+				//	glColor3f(0, 0, 0);
+				if(w > 0)
+					glColor3f(w*3, 0, 0);
+				else
+					glColor3f(0, 0, -w*3);
 			}
+			
 			glBegin(GL_QUADS);
 			glVertex2f(i*GRIDSIZE, j*GRIDSIZE);
 			glVertex2f((i+1)*GRIDSIZE, j*GRIDSIZE);
@@ -739,8 +782,8 @@ void FluidCube2D::draw_dens()
 			glVertex2f(i*GRIDSIZE, (j+1)*GRIDSIZE);
 			glEnd();
 
-			if(GRIDSIZE >= 10 && type[IX(x, y)] == FLUID)
-				draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
+			//if(GRIDSIZE >= 10 && type[IX(x, y)] == FLUID)
+			//	draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
 		}
 
 	glutSwapBuffers();
@@ -762,8 +805,9 @@ void FluidCube2D::draw_velo(int i, int j, float vx, float vy)
 	int LOG = 10;
 	max_v = logf(max_v) + LOG;
 	float dx = 0.6 * GRIDSIZE * (logf(fabsf(vx))+LOG) / max_v * ((vx>0)? 1:-1);
-	float dy = 0.6 * GRIDSIZE * (logf(fabsf(vy))+LOG) / max_v * ((vy>0)? 1:-1);*/
-	
+	float dy = 0.6 * GRIDSIZE * (logf(fabsf(vy))+LOG) / max_v * ((vy>0)? 1:-1);
+	*/
+
 	float dx = 0.5 * GRIDSIZE * vx / vl;
 	float dy = 0.5 * GRIDSIZE * vy / vl;
 

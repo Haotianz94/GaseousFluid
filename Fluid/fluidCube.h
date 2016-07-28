@@ -3,11 +3,9 @@
 
 #include "freeglut.h"
 #include <vector>
+#include <Eigen/Eigen>
 
 #ifdef SIMULATION_2D
-
-
-class SparseMatf;
 
 struct Pos
 {
@@ -38,7 +36,8 @@ private:
 	int **neighbor;
 	int *neighNum;
 	int *pos2index;
-	SparseMatf* A;
+	Eigen::SparseMatrix<double> A;
+	Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 
 	//Advection using BFECC
 	float *d_bf;

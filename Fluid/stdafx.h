@@ -10,16 +10,20 @@
 //#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
-	#define _W 600 
+	#define _W 1000 
 	#define VISBLEW 1600
-	#define _H 30 //30
-	#define GRIDSIZE 10 //15
+	#define _H 50 
+	#define GRIDSIZE 2
 	#define DIFFUSION 0.01
 	#define VISCOSITY 0.01
 	#define TIMESTEP 0.01
 	#define ITERATION 30
 	#define FRAMERATE 32
 	#define DRAGSCALE 100
+	#define FLOWTIME 10
+	#define DENSITY 100
+	#define SPEED 10000
+	#define OBSTACLEX 30
 
 #ifdef CONNECTED
 	#define IX(x, y) ( (x) == 0? _W + (y) * (_W+2) : ((x) == _W+1? 1 + (y) * (_W+2) : (x) + (y) * (_W+2)) )
@@ -50,7 +54,7 @@ enum GRIDTYPE
 
 #define PI 3.14159265
 #define LENGTH _N*GRIDSIZE
-#define eps 1e-10
+//#define eps 1e-10
 #define SWAP(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 
 //system output defines
@@ -59,3 +63,38 @@ enum GRIDTYPE
 #define PRINT_ONELINE(X) std::cout << X
 
 #endif
+
+//Best for vortex street connected
+/*
+	#define _W 1000 
+	#define VISBLEW 1600
+	#define _H 50 
+	#define GRIDSIZE 2
+	#define DIFFUSION 0.01
+	#define VISCOSITY 0.01
+	#define TIMESTEP 0.01
+	#define ITERATION 30
+	#define FRAMERATE 32
+	#define DRAGSCALE 100
+	#define FLOWTIME 10
+	#define DENSITY 100
+	#define SPEED 10000
+	#define OBSTACLEX 30
+*/
+
+//Best for vortex street not connected
+/*
+	#define _W 150
+	#define VISBLEW 1500
+	#define _H 30
+	#define GRIDSIZE 10
+	#define DIFFUSION 0.01
+	#define VISCOSITY 0.01
+	#define TIMESTEP 0.01
+	#define ITERATION 10
+	#define FRAMERATE 32
+	#define DRAGSCALE 100
+	#define FLOWTIME 20
+	#define DENSITY 100
+	#define SPEED 200
+*/
