@@ -23,6 +23,10 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	max_vx = 0;
 	max_vy = 0;
 
+	displayVec = new DisplayVec(LICL, _W, _H);
+	displayVec->createInputTexture();
+	//displayVec->testDDA(1, 100, 0);
+
 	d = new float [size];
 	d0 = new float [size];
 	Vx = new float [size]; 
@@ -260,12 +264,12 @@ void FluidCube2D::diffuseVelosity()
 
 void FluidCube2D::advectVelosity()
 {
+	//use BFECC
 	advect(1, Vx0, fai_b, Vx0, Vy0, true);
 	advect(1, fai_b, fai_f, Vx0, Vy0, false);
 	for(int i = 0; i < size; i++)
 		fai_b[i] = Vx0[i] + (Vx0[i] - fai_f[i]) * 0.5;
 	advect(1, fai_b, Vx, Vx0, Vy0, true);
-
 
 	advect(2, Vy0, fai_b, Vx0, Vy0, true);
 	advect(2, fai_b, fai_f, Vx0, Vy0, false);
@@ -733,7 +737,11 @@ void FluidCube2D::draw_dens()
 
 	//
 	//max_d = 0.15;
+#ifdef VISBLEW
 	int W = VISBLEW/GRIDSIZE;
+#else
+	int W = _W;
+#endif
 	for(int i = 0; i < W; i++)
 		for(int j = 0; j < _H; j++)
 		{
@@ -742,16 +750,22 @@ void FluidCube2D::draw_dens()
 			float color;
 
 			if(type[IX(x, y)] == SOLID)
-				glColor3f(0, 0.5, 0); 
-			/*else if(d[IX(x, y)] == 0)
+				glColor3f(0, 0.5, 0);
+
+			//draw density
+			/*
+			else if(d[IX(x, y)] == 0)
 				glColor3f(0, 0, 0);
 			else
 			{
 				//color = (log(d[IX(x, (h-y))]) - min) / gap;
 				color = d[IX(x, y)] / max_d;
 				glColor3f(color, color, color);
-			}*/
-			//vorticity
+			}
+			*/
+			
+			//draw vorticity
+			/*
 			else
 			{
 				float w = 0.5 * (Vy[IX(x+1, y)] - Vy[IX(x-1, y)]);
@@ -762,6 +776,16 @@ void FluidCube2D::draw_dens()
 					glColor3f(w*3, 0, 0);
 				else
 					glColor3f(0, 0, -w*3);
+			}
+			*/
+
+			//draw velocity using LIC
+		
+			else
+			{
+				//color = displayVec->getOutputTextureDDA(x, y, Vx, Vy);
+				color = displayVec->getOutputTextureLIC(x, y, Vx, Vy);
+				glColor3f(color, color, color);
 			}
 			
 			glBegin(GL_QUADS);
@@ -774,6 +798,7 @@ void FluidCube2D::draw_dens()
 			//if(GRIDSIZE >= 10 && type[IX(x, y)] == FLUID)
 			//	draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
 		}
+	//displayVec->getOutputTextureLIC(55, 55, Vx, Vy);
 
 	glutSwapBuffers();
 }

@@ -2,6 +2,7 @@
 #define _FLUID_H_
 
 #include "freeglut.h"
+#include "displayVec.h"
 #include <vector>
 #include <Eigen/Eigen>
 
@@ -30,7 +31,10 @@ private:
 	float *Vy;
 	GRIDTYPE *type;
 	std::vector<Pos> obstacle;
-	
+	float max_d;
+	float max_vx;
+	float max_vy;
+
 	//Projection using Conjugate Gradient
 	Pos dir[4];
 	int fluidNum;
@@ -44,9 +48,7 @@ private:
 	float *fai_b;
 	float *fai_f;
 
-	float max_d;
-	float max_vx;
-	float max_vy;
+	DisplayVec *displayVec;
 
 public:
 	int size;

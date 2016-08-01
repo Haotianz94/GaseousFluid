@@ -25,7 +25,11 @@ void initialize(){
 
 #ifdef SIMULATION_2D
 
+#ifdef VISBLEW
 	wide = VISBLEW;
+#else
+	wide = _W * GRIDSIZE + 20;
+#endif
 	height = _H * GRIDSIZE + 20;
 	cube = new FluidCube2D(DIFFUSION, VISCOSITY, TIMESTEP);
 

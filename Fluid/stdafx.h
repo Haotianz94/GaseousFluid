@@ -10,8 +10,8 @@
 //#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
-	#define _W 1000
-	#define _H 50 
+	#define _W 600
+	#define _H 100 
 	#define VISBLEW 1600
 	#define _L 1.0
 	#define GRIDSIZE 2
@@ -25,7 +25,7 @@
 	#define DENSITY 100
 	#define SPEED 10000
 	#define OBSTACLEX 30
-
+	#define LICL 10
 	//The viscosity matters a lot
 
 #ifdef CONNECTED
@@ -33,7 +33,7 @@
 #else	
 	#define IX(x, y) ( (x) + (y) * (_W+2) )
 #endif
-	#define BOUNDED(x, y) ( (type[IX(int(x),int(y))] == SOLID || type[IX(int(x)+1,int(y)+1)] == SOLID)? false : true)
+	#define BOUNDED(x, y) ( ((x) < 1 || (x) > _W+1 || (y) < 1 || (y) > _H+1)? false : true)
 	
 	//int IX(float x, float y);
 #else
@@ -56,7 +56,7 @@ enum GRIDTYPE
 };
 
 #define PI 3.14159265
-#define LENGTH _N*GRIDSIZE
+//#define LENGTH _N*GRIDSIZE
 //#define eps 1e-10
 #define SWAP(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 
@@ -69,9 +69,9 @@ enum GRIDTYPE
 
 //Best for vortex street connected
 /*
-	#define _W 1000 
+	#define _W 1000 //600
 	#define VISBLEW 1600
-	#define _H 50
+	#define _H 50 //100
 	#define _L 1.0
 	#define GRIDSIZE 2
 	#define DIFFUSION 0.01
