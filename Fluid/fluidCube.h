@@ -2,12 +2,11 @@
 #define _FLUID_H_
 
 #include "freeglut.h"
+#include "displayVec.h"
 #include <vector>
+#include <Eigen/Eigen>
 
 #ifdef SIMULATION_2D
-
-
-class SparseMatf;
 
 struct Pos
 {
@@ -22,6 +21,7 @@ class FluidCube2D
 private:
 	float h;
 	float h2;
+	float hi;
 	float dt;
 	float diff;
 	float visc;
@@ -31,18 +31,24 @@ private:
 	float *Vy;
 	GRIDTYPE *type;
 	std::vector<Pos> obstacle;
-	Pos dir[4];
+	float max_d;
+	float max_vx;
+	float max_vy;
 
+	//Projection using Conjugate Gradient
+	Pos dir[4];
 	int fluidNum;
 	int **neighbor;
 	int *neighNum;
 	int *pos2index;
+	Eigen::SparseMatrix<double> A;
+	Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 
-	SparseMatf* A;
+	//Advection using BFECC
+	float *fai_b;
+	float *fai_f;
 
-	float max_d;
-	float max_vx;
-	float max_vy;
+	DisplayVec *displayVec;
 
 public:
 	int size;
@@ -64,7 +70,7 @@ private:
 	
 	void add_source(float *x, float *amount);
 	void diffuse(int b, float *u0, float *u, float diffusion);
-	void advect(int b, float *u0, float *u);
+	void advect(int b, float *u0, float *u, float* vx, float* vy, bool backward);
 	void swap(float *x0, float *x);
 	void set_bnd(int b, float *x);
 

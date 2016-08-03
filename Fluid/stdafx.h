@@ -5,28 +5,35 @@
 
 #define SIMULATION_2D 1
 #define CONNECTED 1
-#define OBSTACLE 1
-#define OUTPUT 1
-//#define GAUSS_SEIDEL 1
+//#define OBSTACLE 1
+//#define OUTPUT 1
+#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
-	#define _W 300 
-	#define VISBLEW 1600
-	#define _H 20 //30
-	#define GRIDSIZE 20 //15
+	#define _W 600
+	#define _H 600 
+	//#define VISBLEW 1600
+	#define _L 1.0
+	#define GRIDSIZE 1
 	#define DIFFUSION 0.01
 	#define VISCOSITY 0.01
 	#define TIMESTEP 0.01
 	#define ITERATION 10
 	#define FRAMERATE 32
 	#define DRAGSCALE 100
+	#define FLOWTIME 10
+	#define DENSITY 100
+	#define SPEED 100
+	#define OBSTACLEX 30
+	#define LICL 10
+	//The viscosity matters a lot
 
 #ifdef CONNECTED
 	#define IX(x, y) ( (x) == 0? _W + (y) * (_W+2) : ((x) == _W+1? 1 + (y) * (_W+2) : (x) + (y) * (_W+2)) )
 #else	
 	#define IX(x, y) ( (x) + (y) * (_W+2) )
 #endif
-	#define BOUNDED(x, y) ( (type[IX(int(x),int(y))] == SOLID || type[IX(int(x)+1,int(y)+1)] == SOLID)? false : true)
+	#define BOUNDED(x, y) ( ((x) < 1 || (x) > _W+1 || (y) < 1 || (y) > _H+1)? false : true)
 	
 	//int IX(float x, float y);
 #else
@@ -49,8 +56,8 @@ enum GRIDTYPE
 };
 
 #define PI 3.14159265
-#define LENGTH _N*GRIDSIZE
-#define eps 1e-10
+//#define LENGTH _N*GRIDSIZE
+//#define eps 1e-10
 #define SWAP(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 
 //system output defines
@@ -59,3 +66,39 @@ enum GRIDTYPE
 #define PRINT_ONELINE(X) std::cout << X
 
 #endif
+
+//Best for vortex street connected
+/*
+	#define _W 1000 //600
+	#define VISBLEW 1600
+	#define _H 50 //100
+	#define _L 1.0
+	#define GRIDSIZE 2
+	#define DIFFUSION 0.01
+	#define VISCOSITY 0.01
+	#define TIMESTEP 0.01
+	#define ITERATION 30
+	#define FRAMERATE 32
+	#define DRAGSCALE 100
+	#define FLOWTIME 10
+	#define DENSITY 100
+	#define SPEED 10000
+	#define OBSTACLEX 30
+*/
+
+//Best for vortex street not connected
+/*
+	#define _W 150
+	#define VISBLEW 1500
+	#define _H 30
+	#define GRIDSIZE 10
+	#define DIFFUSION 0.01
+	#define VISCOSITY 0.01
+	#define TIMESTEP 0.01
+	#define ITERATION 10
+	#define FRAMERATE 32
+	#define DRAGSCALE 100
+	#define FLOWTIME 20
+	#define DENSITY 100
+	#define SPEED 200
+*/
