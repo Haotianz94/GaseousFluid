@@ -569,13 +569,13 @@ void FluidCube2D::set_bnd(int b, float *x)
 
 #ifndef CONNECTED
 	
-	/*for(int i = 1; i <= _H; i++)
+	for(int i = 1; i <= _H; i++)
 	{
 		x[IX(0, i)] = b==1? -x[IX(1,i)] : x[IX(1,i)];
-		//x[IX(_W+1, i)] = b==1? -x[IX(_W,i)] : x[IX(_W,i)];
- 	}*/
+		x[IX(_W+1, i)] = b==1? -x[IX(_W,i)] : x[IX(_W,i)];
+ 	}
 
-	for(int i = 1; i <= _H; i++)
+	/*for(int i = 1; i <= _H; i++)
 	{
 		//x[IX(0, i)] = b==2? 0 : x[IX(1,i)];
 		//x[IX(_W+1, i)] = b==2? 0 : x[IX(_W,i)];
@@ -589,7 +589,7 @@ void FluidCube2D::set_bnd(int b, float *x)
 			x[IX(_W+1, i)] = x[IX(_W-1, i)] + x[IX(_W, i-1)] - x[IX(_W, i+1)];
 			x[IX(0, i)] = x[IX(2, i)] + x[IX(1, i+1)] - x[IX(1, i-1)];
 		}
- 	}
+ 	}*/
 
 	x[IX(0, 0)] = 0.5 * (x[IX(1, 0)] + x[IX(0, 1)]);
 	x[IX(0, _H+1)] = 0.5 * (x[IX(1, _H+1)] + x[IX(0, _H)]);
@@ -722,8 +722,8 @@ void FluidCube2D::draw_dens()
 			glVertex2f(i*GRIDSIZE, (j+1)*GRIDSIZE);
 			glEnd();
 
-			//if(GRIDSIZE >= 10 && type[IX(x, y)] == FLUID)
-			//	draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
+			if(GRIDSIZE >= 10 && type[IX(x, y)] == FLUID)
+				draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
 		}
 	//displayVec->getOutputTextureLIC(55, 55, Vx, Vy);
 
