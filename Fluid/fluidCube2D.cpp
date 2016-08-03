@@ -130,6 +130,7 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 				
 #endif
 
+#ifndef GAUSS_SEIDEL
 	//init Matrix
 	A = Eigen::SparseMatrix<double>(fluidNum, fluidNum);         // default is column major
 	A.reserve(Eigen::VectorXi::Constant(fluidNum, 5));
@@ -171,6 +172,7 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	//std::cout<<A<<std::endl;
 	A.makeCompressed();
 	solver.compute(A);
+#endif
 
 	memset(d, 0, sizeof(float) * size);
 	memset(Vx, 0, sizeof(float) * size);
@@ -310,31 +312,6 @@ void FluidCube2D::projectVelosity()
 			for(int x = 1; x <= _W; x++)
 				if(type[IX(x, y)] == FLUID)
 					p[IX(x, y)] = (div[IX(x,y)] + p[IX(x-1,y)] + p[IX(x+1,y)] + p[IX(x,y-1)] + p[IX(x,y+1)]) / 4;
-		//keep balance
-		/*if(k % 1 == 0)
-		{
-   			for(int y = 1; y <= _H; y++)
-				for(int x = 1; x <= _W; x++)
-					p[IX(x, y)] = (div[IX(x,y)] + p[IX(x-1,y)] + p[IX(x+1,y)] + p[IX(x,y-1)] + p[IX(x,y+1)]) / 4;
-		}
-		else if(k % 4 == 1)
-		{
-			for(int y = _N; y >= 1; y--)
-				for(int x = _N; x >= 1; x--)
-					p[IX(x, y)] = (div[IX(x,y)] + p[IX(x-1,y)] + p[IX(x+1,y)] + p[IX(x,y-1)] + p[IX(x,y+1)]) / 4;
-		}
-		else if(k % 4 == 2)
-		{
-			for(int y = 1; y <= _N; y++)
-				for(int x = _N; x >= 1; x--)
-					p[IX(x, y)] = (div[IX(x,y)] + p[IX(x-1,y)] + p[IX(x+1,y)] + p[IX(x,y-1)] + p[IX(x,y+1)]) / 4;
-		}
-		else
-		{
-			for(int y = _N; y >= 1; y--)
-				for(int x = 1; x <= _N; x++)
-					p[IX(x, y)] = (div[IX(x,y)] + p[IX(x-1,y)] + p[IX(x+1,y)] + p[IX(x,y-1)] + p[IX(x,y+1)]) / 4;
-		}*/
 		set_bnd(0, p);
 	}
  
@@ -457,39 +434,6 @@ void FluidCube2D::diffuse(int b, float *u0, float *u, float diffusion)
 			for(int x = 1; x <= _W; x++)
 				if(type[IX(x, y)] == FLUID)
 					u[IX(x, y)] = (u0[IX(x, y)] + a * (u[IX(x-1, y)]+u[IX(x+1, y)]+u[IX(x,y-1)]+u[IX(x,y+1)])) / (1+4*a);
-		//keep balance
-		/*if(k % 4 == 0)
-		{
-   			for(int y = 1; y <= _H; y++)
-				for(int x = 1; x <= _W; x++)
-				{
-					u[IX(x, y)] = (u0[IX(x, y)] + a * (u[IX(x-1, y)]+u[IX(x+1, y)]+u[IX(x,y-1)]+u[IX(x,y+1)])) / (1+4*a);
-				}
-		}
-		else if(k % 4 == 1)
-		{
-			for(int y = _N; y >= 1; y--)
-				for(int x = _N; x >= 1; x--)
-				{
-					u[IX(x, y)] = (u0[IX(x, y)] + a * (u[IX(x-1, y)]+u[IX(x+1, y)]+u[IX(x,y-1)]+u[IX(x,y+1)])) / (1+4*a);
-				}
-		}
-		else if(k % 4 == 2)
-		{
-			for(int y = 1; y <= _N; y++)
-				for(int x = _N; x >= 1; x--)
-				{
-					u[IX(x, y)] = (u0[IX(x, y)] + a * (u[IX(x-1, y)]+u[IX(x+1, y)]+u[IX(x,y-1)]+u[IX(x,y+1)])) / (1+4*a);
-				}
-		}
-		else
-		{
-			for(int y = _N; y >= 1; y--)
-				for(int x = 1; x <= _N; x++)
-				{
-					u[IX(x, y)] = (u0[IX(x, y)] + a * (u[IX(x-1, y)]+u[IX(x+1, y)]+u[IX(x,y-1)]+u[IX(x,y+1)])) / (1+4*a);
-				}
-		}*/
 		set_bnd(b, u);
 	}
 }
@@ -663,25 +607,8 @@ void FluidCube2D::simulate(bool idle)
 		memset(Vx0, 0, sizeof(float) * size);
 		memset(Vy0, 0, sizeof(float) * size);
 	}
-	/*
-	for(int y = 1; y <= _H; y++)
-		{
-			//d[IX(1, y)] = DENSITY;
-			Vx[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
-			Vy[IX(1, y)] = 0;
-		}
-	*/
 
 	vel_step(Vx0, Vy0);
-
-	/*
-	for(int y = 1; y <= _H; y++)
-		{
-			d[IX(1, y)] = DENSITY;
-			//Vx[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
-			//Vy[IX(1, y)] = 0;
-		}
-	*/
 
 	dens_step(d0);
 

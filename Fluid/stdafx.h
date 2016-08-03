@@ -5,25 +5,25 @@
 
 #define SIMULATION_2D 1
 #define CONNECTED 1
-#define OBSTACLE 1
+//#define OBSTACLE 1
 //#define OUTPUT 1
-//#define GAUSS_SEIDEL 1
+#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
 	#define _W 600
-	#define _H 100 
-	#define VISBLEW 1600
+	#define _H 600 
+	//#define VISBLEW 1600
 	#define _L 1.0
-	#define GRIDSIZE 2
+	#define GRIDSIZE 1
 	#define DIFFUSION 0.01
 	#define VISCOSITY 0.01
 	#define TIMESTEP 0.01
-	#define ITERATION 30
+	#define ITERATION 10
 	#define FRAMERATE 32
 	#define DRAGSCALE 100
 	#define FLOWTIME 10
 	#define DENSITY 100
-	#define SPEED 10000
+	#define SPEED 100
 	#define OBSTACLEX 30
 	#define LICL 10
 	//The viscosity matters a lot
