@@ -273,13 +273,13 @@ void timer(int value) {
 
 #ifdef SIMULATION_2D
 
-	if(count %FLOWTIME == 0)
+	if(count %FLOWTIME == 100)
 	{
 		memset(cube->d0, 0, sizeof(float) * cube->size);
 		memset(cube->Vx0, 0, sizeof(float) * cube->size);
 		memset(cube->Vy0, 0, sizeof(float) * cube->size);
 		//for(int x = 1; x <= 5; x++)
-		for(int y = 1; y <= _H; y++)
+		for(int y = _H/4.0; y <= _H/2.0; y++)
 		{
 			cube->d0[IX(1, y)] = DENSITY;
 			cube->Vx0[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
