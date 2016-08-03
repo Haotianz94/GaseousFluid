@@ -1,13 +1,9 @@
 #include "stdafx.h"
 #include "display.h"
-#include "displayVec.h"
-
-#include <Eigen\src\SparseCore\SparseMatrix.h>
 
 int main(int argc, char* argv[])
 {
-	/*PRINT("Program Starting");
-
+	PRINT("Program Starting");
 	glutInit(&argc, argv);
 	//initialize the window 
 	initialize();
