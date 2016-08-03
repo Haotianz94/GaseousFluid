@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 	glutMainLoop(); //this starts the infinite loop
 	PRINT("Exiting Program");*/
 
-		
+			
 
 
 	return 0;
