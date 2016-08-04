@@ -1,11 +1,9 @@
 #include "stdafx.h"
 #include "display.h"
-#include "displayVec.h"
 
 int main(int argc, char* argv[])
 {
 	PRINT("Program Starting");
-
 	glutInit(&argc, argv);
 	//initialize the window 
 	initialize();
