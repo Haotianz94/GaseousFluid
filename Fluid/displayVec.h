@@ -8,6 +8,7 @@ class DisplayVec
 {
 private:
 	int L;
+	int gridSize;
 	cv::Mat input;
 	const char *inputName;
 	int wide;
@@ -16,9 +17,10 @@ private:
 	int *pixel;
 
 	float LIC_integral(float a, float b);
+	float interpolate(int X, int Y, float *u);
 
 public:
-	DisplayVec(int l) :L(l) {}
+	DisplayVec(int l) :L(l){}
 	DisplayVec(int l, int w, int h);
 	~DisplayVec();
 	void createInputTexture();

@@ -13,7 +13,30 @@ struct Pos
 	int x;
 	int y;
 	Pos() {}
-	Pos(float _x, float _y): x(_x), y(_y) {}
+	Pos(int _x, int _y): x(_x), y(_y) {}
+};
+
+struct Velo
+{
+	float x;
+	float y;
+	Velo() {}
+	Velo(float _x, float _y): x(_x), y(_y) {}
+};
+
+enum GRIDTYPE
+{
+	FLUID,
+	AIR,
+	SOLID
+};
+
+enum DISPLAYMODE
+{
+	NONE,
+	VOTICITY,
+	LIC,
+	DENS,
 };
 
 class FluidCube2D
@@ -31,6 +54,7 @@ private:
 	float *Vy;
 	GRIDTYPE *type;
 	std::vector<Pos> obstacle;
+	std::vector<std::pair<Pos, int>> cylinder;
 	float max_d;
 	float max_vx;
 	float max_vy;
@@ -49,6 +73,9 @@ private:
 	float *fai_f;
 
 	DisplayVec *displayVec;
+	float *Vx_lic;
+	float *Vy_lic;
+	DISPLAYMODE mode;
 
 public:
 	int size;
@@ -76,13 +103,15 @@ private:
 
 	void draw_dens();
 	void draw_velo(int i, int j, float vx, float vy);
-
+	Velo interpolate(float X, float Y);
+	void interpolateForLic();
 	void output(float *u);
 
 public:
 	FluidCube2D(float diffusion, float viscosity, float dt);
 	~FluidCube2D();
 	void simulate(bool idle);
+	void setDisplayMode(DISPLAYMODE m) {mode = m; }
 };
 
 #else

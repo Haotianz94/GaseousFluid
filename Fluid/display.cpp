@@ -44,6 +44,7 @@ void initialize(){
 	glutTimerFunc(0, timer, 0);
 	//glutReshapeFunc(reshape); //called when the window is resized
 	glutMouseFunc(mouseClick); //called when the mouse is clicked in the window
+	glutKeyboardFunc(keyEvent); //called when a standard key is pressed
 	//glutMotionFunc(mouseDrag); //called when the mouse is dragged after being clicked
 
 #else 
@@ -139,6 +140,30 @@ void mouseClick(int _button, int _state, int _x, int _y){
 		start = clock();
 	}
 }
+
+void keyEvent(unsigned char _key, int _x, int _y){
+	
+	PRINT("keyEvent(" << _key << "," << _x << "," << _y <<")");
+
+	switch (_key)
+	{
+		case 27:  // ESC
+			exit(0);
+			break;
+		case 'v':
+			cube->setDisplayMode(VOTICITY);
+			break;
+		case 'l':
+			cube->setDisplayMode(LIC);
+			break;
+		case 'n':
+			cube->setDisplayMode(NONE);
+			break;
+		default:
+			break;
+	}
+}
+
 #else
 
 void keyEvent(unsigned char _key, int _x, int _y){
@@ -273,15 +298,15 @@ void timer(int value) {
 
 #ifdef SIMULATION_2D
 
-	if(count %FLOWTIME == 100)
+	if(count %FLOWTIME == 0)
 	{
-		memset(cube->d0, 0, sizeof(float) * cube->size);
+		//memset(cube->d0, 0, sizeof(float) * cube->size);
 		memset(cube->Vx0, 0, sizeof(float) * cube->size);
 		memset(cube->Vy0, 0, sizeof(float) * cube->size);
 		//for(int x = 1; x <= 5; x++)
-		for(int y = _H/4.0; y <= _H/2.0; y++)
+		for(int y = 1; y <= _H; y++)
 		{
-			cube->d0[IX(1, y)] = DENSITY;
+			//cube->d0[IX(1, y)] = DENSITY;
 			cube->Vx0[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
 			//cube->Vy0[IX(1, y)] = 0;
 		}
@@ -291,7 +316,7 @@ void timer(int value) {
 	{
 		glutPostRedisplay();
 	}
-	if(count < 1025)
+	if(count < 385)
 		count ++;
 #else
 	//if(count == 5)

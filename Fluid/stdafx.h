@@ -4,32 +4,33 @@
 #include <iostream>
 
 #define SIMULATION_2D 1
-//#define CONNECTED 1
-//#define OBSTACLE 1
+#define CONNECTED 1
+#define OBSTACLE 1
 //#define OUTPUT 1
-#define GAUSS_SEIDEL 1
+//#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
-	#define _W 400
-	#define _H 400 
-	//#define VISBLEW 1600
+	#define _W 600
+	#define _H 100
 	#define _L 1.0
-	#define GRIDSIZE 1
-	#define DIFFUSION 0.0001
-	#define VISCOSITY 0.0001
+	#define VISBLEW 1200
+	#define GRIDSIZE 3
+	#define DIFFUSION 0.01
+	#define VISCOSITY 0.01
 	#define TIMESTEP 0.01
-	#define ITERATION 10
+	#define ITERATION 30
 	#define FRAMERATE 32
 	#define DRAGSCALE 100
-	#define FLOWTIME 5
+	#define FLOWTIME 10
 	#define DENSITY 100
-	#define SPEED 100000
+	#define SPEED 20000
 	#define OBSTACLEX 30
-	#define LICL 10
-	//The viscosity matters a lot
+	#define LICL 30
+	//The viscosity matters a lot, when you decrease visc, you should also decrease speed
 
 #ifdef CONNECTED
 	#define IX(x, y) ( (x) == 0? _W + (y) * (_W+2) : ((x) == _W+1? 1 + (y) * (_W+2) : (x) + (y) * (_W+2)) )
+	#define IX2(x, y) ( (x) + (y) * (_W*GRIDSIZE+2) )
 #else	
 	#define IX(x, y) ( (x) + (y) * (_W+2) )
 #endif
@@ -47,13 +48,6 @@
 
 	#define IX(x, y, z) ((x) + (y)*(_N+2) + (z)*(_N+2)*(_N+2) )
 #endif
-
-enum GRIDTYPE
-{
-	FLUID,
-	AIR,
-	SOLID
-};
 
 #define PI 3.14159265
 //#define LENGTH _N*GRIDSIZE
@@ -84,6 +78,7 @@ enum GRIDTYPE
 	#define DENSITY 100
 	#define SPEED 10000
 	#define OBSTACLEX 30
+	#define LICL 10
 */
 
 //Best for vortex street not connected

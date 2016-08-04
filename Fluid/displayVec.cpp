@@ -4,7 +4,7 @@
 #include <Eigen\Eigen>
 #include <math.h>
 
-#define IX(x, y) ( (x) + (y) * (wide+2) )
+#define IX(x, y) ( (x) + (y) * (wide + 2) )
 #define BOUNDED(x, y) ( ((x) < 1 || (x) > wide+1 || (y) < 1 || (y) > height+1)? false : true)
 #define PI 3.14159265
 
@@ -55,8 +55,8 @@ void DisplayVec::createInputTexture()
 				input.at<uchar>(height-y, x-1) = pixel[IX(x,y)];
 		}
 	*/
-	cv::imshow("texture", input);
-	cv::waitKey(0);
+	//cv::imshow("texture", input);
+	//cv::waitKey(0);
 }
 
 void DisplayVec::loadInputTexture()
@@ -70,7 +70,7 @@ void DisplayVec::loadInputTexture()
 
 float DisplayVec::getOutputTextureDDA(int x, int y, float *Vx, float *Vy)
 {
-	float k = Vy[IX(x, y)] / Vx[IX(x, y)];
+	float k = Vy[IX(x,y)] / Vx[IX(x,y)];
 	float fk = fabsf(k);
 	int dy = (k >= 0)? 1 : -1;
 	int dx = dy;
@@ -282,8 +282,8 @@ float DisplayVec::getOutputTextureLIC(int x, int y, float *Vx, float *Vy)
 	S = 0;
 	while(S <= L)
 	{
-		vx = -Vx[IX(curGrid.x, curGrid.y)];
-		vy = -Vy[IX(curGrid.x, curGrid.y)];
+		vx = Vx[IX(curGrid.x, curGrid.y)];
+		vy = Vy[IX(curGrid.x, curGrid.y)];
 		
 		if(vx == 0 && vy == 0)
 			break;
@@ -379,6 +379,20 @@ float DisplayVec::LIC_integral(float a, float b)
 	glVertex2f(cx - vx/vl*GRIDSIZE*0.2, cy - vy/vl*GRIDSIZE*0.2);
 	glEnd();
 }*/
+
+float DisplayVec::interpolate(int X, int Y, float *u)
+{
+	float x0 = 1.0 * X / gridSize - 0.5;
+	float y0 = 1.0 * Y / gridSize - 0.5;
+
+	int i0 = int(x0), i1 = i0 + 1;
+	int j0 = int(y0), j1 = j0 + 1;
+	float s1 = x0 - i0, s0 = 1 - s1;
+	float t1 = y0 - j0, t0 = 1 - t1;
+
+	return s0 * (t0*u[IX(i0,j0)] + t1*u[IX(i0,j1)]) +
+		   s1 * (t0*u[IX(i1,j0)] + t1*u[IX(i1,j1)]);
+}
 
 void DisplayVec::test(const char *file, bool DDA)
 {
