@@ -245,6 +245,7 @@ void FluidCube2D::advectDensity()
 void FluidCube2D::vel_step(float *amountX, float *amountY)
 {
 	addVelocity(amountX, amountY);
+	projectVelosity();
 
 	SWAP(Vx0, Vx);
 	SWAP(Vy0, Vy);
@@ -342,14 +343,14 @@ void FluidCube2D::projectVelosity()
 	//Conjugate Gradient
 
 	//check div before project
-	/*for(int y = 1; y <= _H; y++)
+	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
-			div[IX(x, y)] = 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
+			div[IX(x, y)] = 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]) / h2;
 		}
-	output(div);*/
+	output(div);
 
 	Eigen::VectorXd b(fluidNum);
 	int index = 0;
@@ -363,11 +364,8 @@ void FluidCube2D::projectVelosity()
 		}
 	Eigen::VectorXd p(fluidNum);
 	p = solver.solve(b);
-	
-	//for(int i = 100; i < 110; i++)
-	//	cout<<p[i]<<' ';
-	//cout<<endl;
-	//cout<<p<<endl;
+	//REPORT(solver.iterations());
+	//REPORT(solver.error());
 
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
@@ -413,15 +411,15 @@ void FluidCube2D::projectVelosity()
 	set_bnd(2, Vy);
 
 	//check div after project
-	/*for(int y = 1; y <= _H; y++)
+	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
-			div[IX(x, y)] = 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]);
+			div[IX(x, y)] = 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]) / h2;
 		}
 	output(div);
-	int stop = 0;*/
+	int stop = 0;
 #endif
 
 }
@@ -630,7 +628,7 @@ void FluidCube2D::output(float *u)
 		for(int x = 40; x <= 45; x++)
 		{
 			std::cout<<u[IX(x, y)]<<' ';
-			if(x == 15)
+			if(x == 45)
 				std::cout<<std::endl;
 		}
 	PRINT("=================================\n");

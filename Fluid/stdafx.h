@@ -6,7 +6,7 @@
 #define SIMULATION_2D 1
 #define CONNECTED 1
 #define OBSTACLE 1
-//#define OUTPUT 1
+#define OUTPUT 1
 //#define GAUSS_SEIDEL 1
 
 #ifdef SIMULATION_2D
