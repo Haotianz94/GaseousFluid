@@ -336,10 +336,11 @@ void FluidCube3D::simulate(bool idle)
 void FluidCube3D::output(float *u)
 {
 #ifdef OUTPUT 
+	for(int z = 0; z <= _N+1; z++)
 	for(int y = 0; y <= _N+1; y++)
 	{
 		for(int x = 0; x <= _N+1; x++)
-			printf("%.3f ", u[IX(x, y)]);
+			printf("%.3f ", u[IX(x, y, z)]);
 		printf("\n");
 	}
 	printf("=================================\n");

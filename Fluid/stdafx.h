@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#define SIMULATION_2D 1
+//#define SIMULATION_2D 1
 #define CONNECTED 1
 #define OBSTACLE 1
 #define OUTPUT 1
@@ -50,7 +50,7 @@
 #endif
 
 #define PI 3.14159265
-//#define LENGTH _N*GRIDSIZE
+#define LENGTH _N*GRIDSIZE
 //#define eps 1e-10
 #define SWAP(x0, x) {float *tmp = x0; x0 = x; x = tmp;}
 

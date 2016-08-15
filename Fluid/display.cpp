@@ -10,12 +10,10 @@
 FluidCube2D *cube;
 #else
 FluidCube3D *cube;
-float ll = 2 * LENGTH;
-float seita = 0, fai = 0;
-float px = 2 * LENGTH, py = 0, pz = 0;
-float dx = cosf(seita) * cosf(fai);
-float dy = sinf(seita);
-float dz = cosf(seita) * sinf(fai);
+float ll = 2 * LENGTH, seita = 0, fai = 0;
+float px = ll * cosf(seita) * cosf(fai);
+float py = ll * sinf(seita);
+float pz = ll * cosf(seita) * sinf(fai);
 #endif
 
 int count = 0;
@@ -103,9 +101,9 @@ void reshape(int _w, int _h){
 	PRINT("done - reshape(" <<_w << "," << _h <<")");
 }
 
+int lastx,lasty;
 #ifdef SIMULATION_2D
 
-int lastx,lasty;
 clock_t start;
 void mouseClick(int _button, int _state, int _x, int _y){
 	PRINT("mouseClick(" <<_button << "," << _state << "," << _x << "," << _y <<")");
@@ -182,9 +180,6 @@ void keyEvent(unsigned char _key, int _x, int _y){
 			px = ll * cosf(seita) * cosf(fai);
 			py = ll * sinf(seita);
 			pz = ll * cosf(seita) * sinf(fai);
-			dx = cosf(seita) * cosf(fai);
-			dy = sinf(seita);
-			dz = cosf(seita) * sinf(fai);
 			break;
 		case 'y':
 			seita = PI / 2;
@@ -193,9 +188,6 @@ void keyEvent(unsigned char _key, int _x, int _y){
 			px = ll * cosf(seita) * cosf(fai);
 			py = ll * sinf(seita);
 			pz = ll * cosf(seita) * sinf(fai);
-			dx = cosf(seita) * cosf(fai);
-			dy = sinf(seita);
-			dz = cosf(seita) * sinf(fai);
 			break;
 		case 'z':
 			seita = 0; 
@@ -204,9 +196,6 @@ void keyEvent(unsigned char _key, int _x, int _y){
 			px = ll * cosf(seita) * cosf(fai);
 			py = ll * sinf(seita);
 			pz = ll * cosf(seita) * sinf(fai);
-			dx = cosf(seita) * cosf(fai);
-			dy = sinf(seita);
-			dz = cosf(seita) * sinf(fai);
 			break;
 		default:
 			break;
@@ -225,55 +214,43 @@ void specKeyEvent(int _key, int _x, int _y){
 			px = ll * cosf(seita) * cosf(fai);
 			py = ll * sinf(seita);
 			pz = ll * cosf(seita) * sinf(fai);
-			dx = cosf(seita) * cosf(fai);
-			dy = sinf(seita);
-			dz = cosf(seita) * sinf(fai);
 			break;
 		case GLUT_KEY_RIGHT:
 			fai += 0.01f;
 			px = ll * cosf(seita) * cosf(fai);
 			py = ll * sinf(seita);
 			pz = ll * cosf(seita) * sinf(fai);
-			dx = cosf(seita) * cosf(fai);
-			dy = sinf(seita);
-			dz = cosf(seita) * sinf(fai);
 			break;
 		case GLUT_KEY_UP:
 			seita += 0.01f;
 			px = ll * cosf(seita) * cosf(fai);
 			py = ll * sinf(seita);
 			pz = ll * cosf(seita) * sinf(fai);
-			dx = cosf(seita) * cosf(fai);
-			dy = sinf(seita);
-			dz = cosf(seita) * sinf(fai);
 			break;
 		case GLUT_KEY_DOWN:
 			seita -= 0.01f;
 			px = ll * cosf(seita) * cosf(fai);
 			py = ll * sinf(seita);
 			pz = ll * cosf(seita) * sinf(fai);
-			dx = cosf(seita) * cosf(fai);
-			dy = sinf(seita);
-			dz = cosf(seita) * sinf(fai);
 			break;
 		case GLUT_KEY_PAGE_UP:
-			px -= dx * fraction;
-			py -= dy * fraction;
-			pz -= dz * fraction;
 			ll -= fraction;
+			px = ll * cosf(seita) * cosf(fai);
+			py = ll * sinf(seita);
+			pz = ll * cosf(seita) * sinf(fai);
 			break;
 		case GLUT_KEY_PAGE_DOWN:
-			px += dx * fraction;
-			py += dy * fraction;
-			pz += dz * fraction;
 			ll += fraction;
+			px = ll * cosf(seita) * cosf(fai);
+			py = ll * sinf(seita);
+			pz = ll * cosf(seita) * sinf(fai);
 			break;
 		default:
 			break;
 	}
-	REPORT(px);
-	REPORT(py);
-	REPORT(pz);
+	REPORT(ll);
+	REPORT(seita);
+	REPORT(fai);
 	cube->draw_dens();
 }
 
