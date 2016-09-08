@@ -148,7 +148,7 @@ void keyEvent(unsigned char _key, int _x, int _y){
 		case 27:  // ESC
 			exit(0);
 			break;
-		case 'v':
+		case 'w':
 			cube->setDisplayMode(VOTICITY);
 			break;
 		case 'l':
@@ -156,6 +156,12 @@ void keyEvent(unsigned char _key, int _x, int _y){
 			break;
 		case 'n':
 			cube->setDisplayMode(NONE);
+			break;
+		case 'd':
+			cube->setDisplayMode(DENS);
+			break;
+		case 'v':
+			cube->setDisplayMode(VELOCITY);
 			break;
 		default:
 			break;
@@ -277,23 +283,31 @@ void timer(int value) {
 
 	if(count %FLOWTIME == 0)
 	{
-		//memset(cube->d0, 0, sizeof(float) * cube->size);
+		memset(cube->d0, 0, sizeof(float) * cube->size);
 		memset(cube->Vx0, 0, sizeof(float) * cube->size);
 		memset(cube->Vy0, 0, sizeof(float) * cube->size);
-		//for(int x = 1; x <= 5; x++)
+		
+		/*
 		for(int y = 1; y <= _H; y++)
 		{
-			//cube->d0[IX(1, y)] = DENSITY;
+			cube->d0[IX(1, y)] = DENSITY;
 			cube->Vx0[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
 			//cube->Vy0[IX(1, y)] = 0;
 		}
+		*/
+		float seita = (count % 30 + 75) / 180.0 * PI;
+		int x = _W/2, y = 5;
+		cube->d0[IX(x, y)] = DENSITY;
+		cube->Vx0[IX(x, y)] = SPEED * cosf(seita);
+		cube->Vy0[IX(x, y)] = SPEED * sinf(seita);
+		
 		cube->simulate(false);
 	}
 	else
 	{
 		glutPostRedisplay();
 	}
-	if(count < 385)
+	if(count < 111)//385 for vortex street 
 		count ++;
 #else
 	//if(count == 5)
@@ -338,5 +352,5 @@ void timer(int value) {
 #endif	
 
 	//glutPostRedisplay();
-	glutTimerFunc(FRAMERATE, timer, 0); // next timer call milliseconds later
+	glutTimerFunc(0, timer, 0); // next timer call milliseconds later
 }

@@ -26,7 +26,7 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	displayVec = new DisplayVec(LICL, _W*GRIDSIZE, _H*GRIDSIZE);
 	displayVec->createInputTexture();
 	//displayVec->testDDA(1, 100, 0);
-	mode = VOTICITY;
+	mode = DENS;
 
 	d = new float [size];
 	d0 = new float [size];
@@ -37,6 +37,7 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	type = new GRIDTYPE [size];
 	Vx_lic = new float [((_W*GRIDSIZE)+2)*((_H*GRIDSIZE)+2)];
 	Vy_lic = new float [((_W*GRIDSIZE)+2)*((_H*GRIDSIZE)+2)];
+	d_lic = new float [((_W*GRIDSIZE)+2)*((_H*GRIDSIZE)+2)];
 	//Advection using BFECC
 	fai_b = new float [size];
 	fai_f = new float [size];
@@ -210,6 +211,7 @@ FluidCube2D::~FluidCube2D()
 
 	delete [] Vx_lic;
 	delete [] Vy_lic;
+	delete [] d_lic;
 }
 
 void FluidCube2D::dens_step(float *amount)
@@ -235,11 +237,14 @@ void FluidCube2D::diffuseDensity()
 
 void FluidCube2D::advectDensity()
 {
+	/*
 	advect(0, d0, fai_b, Vx, Vy, true);
 	advect(0, fai_b, fai_f, Vx, Vy, false);
 	for(int i = 0; i < size; i++)
 		fai_b[i] = d0[i] + (d0[i] - fai_f[i]) * 0.5;
 	advect(0, fai_b, d, Vx, Vy, true);
+	*/
+	advect(0, d0, d, Vx, Vy, true);
 }
 
 void FluidCube2D::vel_step(float *amountX, float *amountY)
@@ -343,6 +348,7 @@ void FluidCube2D::projectVelosity()
 	//Conjugate Gradient
 
 	//check div before project
+	/*
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
 		{
@@ -351,6 +357,7 @@ void FluidCube2D::projectVelosity()
 			div[IX(x, y)] = 0.5 * (Vx[IX(x+1,y)]-Vx[IX(x-1,y)] + Vy[IX(x,y+1)]-Vy[IX(x,y-1)]) / h2;
 		}
 	output(div);
+	*/
 
 	Eigen::VectorXd b(fluidNum);
 	int index = 0;
@@ -411,6 +418,7 @@ void FluidCube2D::projectVelosity()
 	set_bnd(2, Vy);
 
 	//check div after project
+	/*
 	for(int y = 1; y <= _H; y++)
 		for(int x = 1; x <= _W; x++)
 		{
@@ -420,6 +428,7 @@ void FluidCube2D::projectVelosity()
 		}
 	output(div);
 	int stop = 0;
+	*/
 #endif
 
 }
@@ -609,14 +618,14 @@ void FluidCube2D::simulate(bool idle)
 {
 	if(idle)
 	{
-		//memset(d0, 0, sizeof(float) * size);
+		memset(d0, 0, sizeof(float) * size);
 		memset(Vx0, 0, sizeof(float) * size);
 		memset(Vy0, 0, sizeof(float) * size);
 	}
 
 	vel_step(Vx0, Vy0);
 
-	//dens_step(d0);
+	dens_step(d0);
 
 	draw_dens();
 }
@@ -698,16 +707,23 @@ void FluidCube2D::draw_dens()
 			float color = 0;
 
 			//draw obstacle
+#ifdef OBSTACLE
 			float r = sqrtf((i-cx)*(i-cx) + (j-cy)*(j-cy));
 			if(r < R)
 				glColor3f(0, 0.5, 0);
-
+#else 
+			if(false)
+			{
+			}
+#endif
+	
 			//draw density
 			else if(mode == DENS)
 			{
 				//float dd = interpolate(x, y, d);
 				//color = (log(d[IX(x, (h-y))]) - min) / gap;
-				//color = dd / max_d;
+				max_d = 0.1;
+				color = d_lic[IX2(x, y)] / max_d;
 				glColor3f(color, color, color);
 			}
 			//draw vorticity
@@ -723,41 +739,34 @@ void FluidCube2D::draw_dens()
 			//draw velocity using LIC
 			else if(mode == LIC)
 			{
-				//color = displayVec->getOutputTextureDDA(x, y, Vx, Vy);
-				/*float w = 0.5 * (Vy_lic[IX2(x+1, y)] - Vy_lic[IX2(x-1, y)])
-						  - 0.5 * (Vx_lic[IX2(x, y+1)] - Vx_lic[IX2(x, y-1)]);
-				if(fabsf(w) > max_w)
-					max_w = fabsf(w);
-				if(fabsf(w) < 0.01)
-				{
-					if(w > 0)
-						glColor3f(w*3, 0, 0);
-					else
-						glColor3f(0, 0, -w*3);
-					//glColor3f(0,0,0);
-				}
-				else
-				{
-				*/
-					color = displayVec->getOutputTextureLIC(x, y, Vx_lic, Vy_lic);
-					glColor3f(color, color, color);
-				//}
+				color = displayVec->getOutputTextureLIC(x, y, Vx_lic, Vy_lic);
+				glColor3f(color, color, color);
 			}
+			else
+				glColor3f(0, 0, 0);
 
-			glBegin(GL_POINTS);
-			glVertex2f(i, j);
-			//glBegin(GL_QUADS);
-			//glVertex2f(i*GRIDSIZE, j*GRIDSIZE);
-			//glVertex2f((i+1)*GRIDSIZE, j*GRIDSIZE);
-			//glVertex2f((i+1)*GRIDSIZE, (j+1)*GRIDSIZE);
-			//glVertex2f(i*GRIDSIZE, (j+1)*GRIDSIZE);
-			glEnd();
+			if(mode != VELOCITY)
+			{
+				glBegin(GL_POINTS);
+				glVertex2f(i, j);
+				glEnd();
+			}
+			else
+			{
+				glBegin(GL_QUADS);
+				glVertex2f(i*GRIDSIZE, j*GRIDSIZE);
+				glVertex2f((i+1)*GRIDSIZE, j*GRIDSIZE);
+				glVertex2f((i+1)*GRIDSIZE, (j+1)*GRIDSIZE);
+				glVertex2f(i*GRIDSIZE, (j+1)*GRIDSIZE);
+				glEnd();
+			}
+			
 
 			//if(GRIDSIZE >= 10 && type[IX(x, y)] == FLUID)
 			//	draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
 		}
 	//displayVec->getOutputTextureLIC(55, 55, Vx, Vy);
-	REPORT(max_w);
+	//REPORT(max_w);
 
 	glutSwapBuffers();
 }
@@ -781,11 +790,11 @@ void FluidCube2D::draw_velo(int i, int j, float vx, float vy)
 	float dy = 0.6 * GRIDSIZE * (logf(fabsf(vy))+LOG) / max_v * ((vy>0)? 1:-1);
 	*/
 
-	float dx = 0.5 * GRIDSIZE * vx / vl;
-	float dy = 0.5 * GRIDSIZE * vy / vl;
+	//float dx = 0.5 * GRIDSIZE * vx / vl;
+	//float dy = 0.5 * GRIDSIZE * vy / vl;
 
-	//float dx = 20 * GRIDSIZE * vx ;
-	//float dy = 20 * GRIDSIZE * vy ;
+	float dx = 0.5 * GRIDSIZE * vx;
+	float dy = 0.5 * GRIDSIZE * vy;
 
 	glBegin(GL_LINES);
 	glColor3f(1.0f, 0.0f, 0.0f);
@@ -799,21 +808,25 @@ void FluidCube2D::draw_velo(int i, int j, float vx, float vy)
 	glEnd();
 }
 
-Velo FluidCube2D::interpolate(float x, float y)
+Eigen::Vector3f FluidCube2D::interpolate(float x, float y)
 {
-	float x0 = x / GRIDSIZE + 0.5;
-	float y0 = y / GRIDSIZE + 0.5;
+	//float x0 = x / GRIDSIZE + 0.5;
+	//float y0 = y / GRIDSIZE + 0.5;
+	float x0 = x / GRIDSIZE;
+	float y0 = y / GRIDSIZE;
 
 	int i0 = int(x0), i1 = i0 + 1;
 	int j0 = int(y0), j1 = j0 + 1;
 	float s1 = x0 - i0, s0 = 1 - s1;
 	float t1 = y0 - j0, t0 = 1 - t1;
 
-	float vx = s0 * (t0*Vx[IX(i0,j0)] + t1*Vx[IX(i0,j1)]) +
-				s1 * (t0*Vx[IX(i1,j0)] + t1*Vx[IX(i1,j1)]);
-	float vy = s0 * (t0*Vy[IX(i0,j0)] + t1*Vy[IX(i0,j1)]) +
-				s1 * (t0*Vy[IX(i1,j0)] + t1*Vy[IX(i1,j1)]);
-	return Velo(vx, vy);
+	//float vx = s0 * (t0*Vx[IX(i0,j0)] + t1*Vx[IX(i0,j1)]) +
+	//			s1 * (t0*Vx[IX(i1,j0)] + t1*Vx[IX(i1,j1)]);
+	//float vy = s0 * (t0*Vy[IX(i0,j0)] + t1*Vy[IX(i0,j1)]) +
+	//			s1 * (t0*Vy[IX(i1,j0)] + t1*Vy[IX(i1,j1)]);
+	float dd = s0 * (t0*d[IX(i0,j0)] + t1*d[IX(i0,j1)]) +
+				s1 * (t0*d[IX(i1,j0)] + t1*d[IX(i1,j1)]);
+	return Eigen::Vector3f(dd, 0, 0);
 }
 
 void FluidCube2D::interpolateForLic()
@@ -824,9 +837,11 @@ void FluidCube2D::interpolateForLic()
 	for(int y = 1; y <= H; y++)
 		for(int x = 1; x <= W; x++)
 		{
-			Velo v = interpolate(x-0.5, y-0.5);
-			Vx_lic[IX2(x, y)] = v.x;
-			Vy_lic[IX2(x, y)] = v.y;
+			//Velo v = interpolate(x-0.5, y-0.5);
+			Eigen::Vector3f res = interpolate(x, y);
+			d_lic[IX2(x, y)] = res[0];
+			Vx_lic[IX2(x, y)] = res[1];
+			Vy_lic[IX2(x, y)] = res[2];
 		}
 }
 #endif

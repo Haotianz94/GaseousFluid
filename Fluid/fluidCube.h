@@ -37,6 +37,7 @@ enum DISPLAYMODE
 	VOTICITY,
 	LIC,
 	DENS,
+	VELOCITY
 };
 
 class FluidCube2D
@@ -75,6 +76,7 @@ private:
 	DisplayVec *displayVec;
 	float *Vx_lic;
 	float *Vy_lic;
+	float *d_lic;
 	DISPLAYMODE mode;
 
 public:
@@ -103,7 +105,7 @@ private:
 
 	void draw_dens();
 	void draw_velo(int i, int j, float vx, float vy);
-	Velo interpolate(float X, float Y);
+	Eigen::Vector3f interpolate(float X, float Y);
 	void interpolateForLic();
 	void output(float *u);
 

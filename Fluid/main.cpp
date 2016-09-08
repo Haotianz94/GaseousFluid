@@ -12,9 +12,6 @@ int main(int argc, char* argv[])
 	glutMainLoop(); //this starts the infinite loop
 	PRINT("Exiting Program");
 
-	//DisplayVec dpv = DisplayVec(10);
-	//dpv.test("../input/test.jpg", true);
-	//return 0;
 }
 //1.  h2;  1/ dt
 //2.  Store A
