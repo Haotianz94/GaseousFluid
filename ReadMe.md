@@ -29,6 +29,7 @@ A Gaseous Fluid Simulation Demo
 ##References
 [STAM, J., "Real-time fluid dynamics for games," in Proceedings of the Game Developer Conference, Mar. 2003.]
 (http://www.intpowertechcorp.com/GDC03.pdf)
+
 [Brian C., Leedom L., "Imaging Vector Fields using Line Integral Convolution," Proceedings of the 20th
 annual conference on Computer graphics and interactive techniques. SIGGRAPH '93. Anaheim, California, 1993.]
 (http://cs.brown.edu/courses/csci2370/2000/1999/cabral.pdf)
