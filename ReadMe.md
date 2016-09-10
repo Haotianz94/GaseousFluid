@@ -27,7 +27,7 @@ A Gaseous Fluid Simulation Demo
  * Set boundary conditions
  
 ##References
-[STAM, J., ¡°Real-time fluid dynamics for games,¡± in Proceedings of the Game Developer Conference, Mar. 2003.]
+[STAM, J., "Real-time fluid dynamics for games," in Proceedings of the Game Developer Conference, Mar. 2003.]
 (http://www.intpowertechcorp.com/GDC03.pdf)
 [Brian C., Leedom L., "Imaging Vector Fields using Line Integral Convolution," Proceedings of the 20th
 annual conference on Computer graphics and interactive techniques. SIGGRAPH '93. Anaheim, California, 1993.]
