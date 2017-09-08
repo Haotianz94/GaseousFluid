@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <math.h>
 #include <Eigen\Eigen>
+#include <opencv2\opencv.hpp>
 //#include "vl\VLfd.h"
 //#include "vl\VLf.h"
 //#include "vl\Solve.h"
@@ -132,7 +133,7 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 					neighNum[IX(x, y)] ++;
 			}
 		}
-				
+
 #endif
 
 #ifndef GAUSS_SEIDEL
@@ -188,6 +189,19 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 
 	memset(fai_b, 0, sizeof(float) * size);
 	memset(fai_f, 0, sizeof(float) * size);
+
+	//fill density according to input image
+	cv::Mat name = cv::imread("name.jpg", 0);
+	for(int y = 30; y <= _H; y++)
+		for(int x = 1; x <= _W; x++)
+		{
+			if(name.at<uchar>(_H+1 - y, x) < 127)
+			{
+				d[IX(x, y)] = 10;
+				Vy[IX(x, y)] = 0;
+			}
+		}
+
 }
 
 FluidCube2D::~FluidCube2D()
@@ -722,7 +736,7 @@ void FluidCube2D::draw_dens()
 			{
 				//float dd = interpolate(x, y, d);
 				//color = (log(d[IX(x, (h-y))]) - min) / gap;
-				max_d = 0.1;
+				max_d = 3;
 				color = d_lic[IX2(x, y)] / max_d;
 				glColor3f(color, color, color);
 			}

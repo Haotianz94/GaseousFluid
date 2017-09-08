@@ -103,7 +103,6 @@ private:
 	void swap(float *x0, float *x);
 	void set_bnd(int b, float *x);
 
-	void draw_dens();
 	void draw_velo(int i, int j, float vx, float vy);
 	Eigen::Vector3f interpolate(float X, float Y);
 	void interpolateForLic();
@@ -113,6 +112,7 @@ public:
 	FluidCube2D(float diffusion, float viscosity, float dt);
 	~FluidCube2D();
 	void simulate(bool idle);
+	void draw_dens();
 	void setDisplayMode(DISPLAYMODE m) {mode = m; }
 };
 

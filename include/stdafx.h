@@ -21,7 +21,7 @@
 	#define ITERATION 30
 	#define FRAMERATE 32
 	#define DRAGSCALE 100
-	#define FLOWTIME 1000//1
+	#define FLOWTIME 100//1
 	#define DENSITY 300
 	#define SPEED 4000
 	#define OBSTACLEX 30

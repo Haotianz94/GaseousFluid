@@ -18,6 +18,7 @@ float pz = ll * cosf(seita) * sinf(fai);
 
 int count = 0;
 int wide, height;
+bool pause = true;
 
 void initialize(){
 
@@ -147,6 +148,9 @@ void keyEvent(unsigned char _key, int _x, int _y){
 	{
 		case 27:  // ESC
 			exit(0);
+			break;
+		case 'e':
+			pause = !pause;
 			break;
 		case 'w':
 			cube->setDisplayMode(VOTICITY);
@@ -281,7 +285,14 @@ void timer(int value) {
 
 #ifdef SIMULATION_2D
 
-	if(count %FLOWTIME == 0)
+	if(pause)
+	{
+		cube->draw_dens();
+		glutTimerFunc(0, timer, 0); // next timer call milliseconds later
+		return;
+	}
+
+	if(count %FLOWTIME == 0)//0
 	{
 		memset(cube->d0, 0, sizeof(float) * cube->size);
 		memset(cube->Vx0, 0, sizeof(float) * cube->size);
@@ -307,7 +318,7 @@ void timer(int value) {
 	{
 		glutPostRedisplay();
 	}
-	if(count < 111)//385 for vortex street 
+	if(count < 100000)//385 for vortex street 
 		count ++;
 #else
 	//if(count == 5)
