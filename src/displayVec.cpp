@@ -1,7 +1,7 @@
 #include "displayVec.h"
 #include <cstdio>
 #include <ctime>
-#include <Eigen\Eigen>
+#include <Eigen/Eigen>
 #include <math.h>
 
 #define IX(x, y) ( (x) + (y) * (wide + 2) )

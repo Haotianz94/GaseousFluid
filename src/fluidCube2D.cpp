@@ -2,17 +2,12 @@
 #include "fluidCube.h"
 #include <memory.h>
 #include <math.h>
-#include <Eigen\Eigen>
-//#include "vl\VLfd.h"
-//#include "vl\VLf.h"
-//#include "vl\Solve.h"
-
-#ifdef SIMULATION_2D
+#include <Eigen/Eigen>
 
 FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 {
-	size = (_W+2) * (_H+2);
-	h = _L / _H;
+	size = (NUMGRIDW+2) * (NUMGRIDH+2);
+	h = CubeLength / NUMGRIDH;
 	h2 = h * h;
 	hi = 1 / h;
 	dt = dtime;
@@ -23,7 +18,7 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	max_vx = 0;
 	max_vy = 0;
 
-	displayVec = new DisplayVec(LICL, _W*GRIDSIZE, _H*GRIDSIZE);
+	displayVec = new DisplayVec(LICL, NUMGRIDW*GRIDSIZE, NUMGRIDH*GRIDSIZE);
 	displayVec->createInputTexture();
 	//displayVec->testDDA(1, 100, 0);
 	mode = DENS;
@@ -35,9 +30,9 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	Vx0 = new float [size]; 
 	Vy0 = new float [size]; 
 	type = new GRIDTYPE [size];
-	Vx_lic = new float [((_W*GRIDSIZE)+2)*((_H*GRIDSIZE)+2)];
-	Vy_lic = new float [((_W*GRIDSIZE)+2)*((_H*GRIDSIZE)+2)];
-	d_lic = new float [((_W*GRIDSIZE)+2)*((_H*GRIDSIZE)+2)];
+	Vx_lic = new float [((NUMGRIDW*GRIDSIZE)+2)*((NUMGRIDH*GRIDSIZE)+2)];
+	Vy_lic = new float [((NUMGRIDW*GRIDSIZE)+2)*((NUMGRIDH*GRIDSIZE)+2)];
+	d_lic = new float [((NUMGRIDW*GRIDSIZE)+2)*((NUMGRIDH*GRIDSIZE)+2)];
 	//Advection using BFECC
 	fai_b = new float [size];
 	fai_f = new float [size];
@@ -60,24 +55,24 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	}
 
 #ifdef CONNECTED
-	type[IX(100, _H+1)] = AIR;
+	type[IX(100, NUMGRIDH+1)] = AIR;
 #else
-	for(int y = 0; y <= _H+1; y++)
+	for(int y = 0; y <= NUMGRIDH+1; y++)
 	{
-		type[IX(_W+1, y)] = AIR;
+		type[IX(NUMGRIDW+1, y)] = AIR;
 		//type[IX(0, y)] = AIR;
 	}
 #endif
 
 #ifdef OBSTACLE
 
-	cylinder.push_back(std::pair<Pos, int>(Pos(OBSTACLEX, _H/2), _H*0.1));
+	cylinder.push_back(std::pair<Pos, int>(Pos(OBSTACLEX, NUMGRIDH/2), NUMGRIDH*0.1));
 	int cx = cylinder[0].first.x;
 	int cy = cylinder[0].first.y;
 	int R = cylinder[0].second;
 	fluidNum = 0;
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			float r = sqrtf((x-cx)*(x-cx) + (y-cy)*(y-cy));
 			if(r < R)
@@ -88,8 +83,8 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 				pos2index[IX(x, y)] = fluidNum ++;
 			}
 		}
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 			if(type[IX(x, y)] == SOLID)
 			{
 				for(int i = 0; i < 4; i++)
@@ -113,14 +108,14 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 			}
 #else
 	fluidNum = 0;
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			type[IX(x, y)] = FLUID;
 			pos2index[IX(x, y)] = fluidNum ++;
 		}
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			neighNum[IX(x, y)] = 0;
 			for(int i = 0; i < 4; i++)
@@ -140,8 +135,8 @@ FluidCube2D::FluidCube2D(float diffusion, float viscosity, float dtime)
 	A = Eigen::SparseMatrix<double>(fluidNum, fluidNum);         // default is column major
 	A.reserve(Eigen::VectorXi::Constant(fluidNum, 5));
 	int index = 0;
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -305,8 +300,8 @@ void FluidCube2D::projectVelosity()
 	float *p = Vx0;
 	//float *div = Vy0;
 
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -321,15 +316,15 @@ void FluidCube2D::projectVelosity()
 	
 	for(int k = 0; k < ITERATION; k++)
 	{
-		for(int y = 1; y <= _H; y++)
-			for(int x = 1; x <= _W; x++)
+		for(int y = 1; y <= NUMGRIDH; y++)
+			for(int x = 1; x <= NUMGRIDW; x++)
 				if(type[IX(x, y)] == FLUID)
 					p[IX(x, y)] = (div[IX(x,y)] + p[IX(x-1,y)] + p[IX(x+1,y)] + p[IX(x,y-1)] + p[IX(x,y+1)]) / 4;
 		set_bnd(0, p);
 	}
  
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -349,8 +344,8 @@ void FluidCube2D::projectVelosity()
 
 	//check div before project
 	/*
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -361,8 +356,8 @@ void FluidCube2D::projectVelosity()
 
 	Eigen::VectorXd b(fluidNum);
 	int index = 0;
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -374,8 +369,8 @@ void FluidCube2D::projectVelosity()
 	//REPORT(solver.iterations());
 	//REPORT(solver.error());
 
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -419,8 +414,8 @@ void FluidCube2D::projectVelosity()
 
 	//check div after project
 	/*
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -444,8 +439,8 @@ void FluidCube2D::diffuse(int b, float *u0, float *u, float diffusion)
 	float a = dt * diffusion / h2;
 	for(int k = 0; k < ITERATION; k++)
 	{
-		for(int y = 1; y <= _H; y++)
-			for(int x = 1; x <= _W; x++)
+		for(int y = 1; y <= NUMGRIDH; y++)
+			for(int x = 1; x <= NUMGRIDW; x++)
 				if(type[IX(x, y)] == FLUID)
 					u[IX(x, y)] = (u0[IX(x, y)] + a * (u[IX(x-1, y)]+u[IX(x+1, y)]+u[IX(x,y-1)]+u[IX(x,y+1)])) / (1+4*a);
 		set_bnd(b, u);
@@ -456,8 +451,8 @@ void FluidCube2D::advect(int b, float *u0, float *u, float *vx, float *vy, bool 
 {
 	max_d = 0;
 	float dt0 = dt / h;
-	for(int y = 1; y <= _H; y++)
-		for(int x = 1; x <= _W; x++)
+	for(int y = 1; y <= NUMGRIDH; y++)
+		for(int x = 1; x <= NUMGRIDW; x++)
 		{
 			if(type[IX(x, y)] != FLUID)
 				continue;
@@ -476,20 +471,20 @@ void FluidCube2D::advect(int b, float *u0, float *u, float *vx, float *vy, bool 
 
 #ifdef CONNECTED
 			if(x0 <= 0)
-				x0 += _W;
-			else if(x0 >= _W+1)
-				x0 -= _W;
+				x0 += NUMGRIDW;
+			else if(x0 >= NUMGRIDW+1)
+				x0 -= NUMGRIDW;
 			//if the speed is too high, it may still out of bound 
 #else
 			if(x0 < 0.5)
 				x0 = 0.5;
-			else if(x0 > _W + 0.5)
-				x0 = _W + 0.5;
+			else if(x0 > NUMGRIDW + 0.5)
+				x0 = NUMGRIDW + 0.5;
 #endif
 			if(y0 < 0.5)
 				y0 = 0.5;
-			else if(y0 > _H + 0.5)
-				y0 = _H + 0.5;
+			else if(y0 > NUMGRIDH + 0.5)
+				y0 = NUMGRIDH + 0.5;
 
 			int i0 = int(x0), i1 = i0 + 1;
 			int j0 = int(y0), j1 = j0 + 1;
@@ -576,40 +571,40 @@ void FluidCube2D::set_bnd(int b, float *x)
 		}
 	}
 
-	for(int i = 1; i <= _W; i++)
+	for(int i = 1; i <= NUMGRIDW; i++)
 	{
 		x[IX(i, 0)] = b==2? -x[IX(i,1)] : x[IX(i,1)];
-		x[IX(i, _H+1)] = b==2? -x[IX(i,_H)] : x[IX(i,_H)];
+		x[IX(i, NUMGRIDH+1)] = b==2? -x[IX(i,NUMGRIDH)] : x[IX(i,NUMGRIDH)];
  	}
 
 #ifndef CONNECTED
 	
-	for(int i = 1; i <= _H; i++)
+	for(int i = 1; i <= NUMGRIDH; i++)
 	{
 		x[IX(0, i)] = b==1? -x[IX(1,i)] : x[IX(1,i)];
-		x[IX(_W+1, i)] = b==1? -x[IX(_W,i)] : x[IX(_W,i)];
+		x[IX(NUMGRIDW+1, i)] = b==1? -x[IX(NUMGRIDW,i)] : x[IX(NUMGRIDW,i)];
  	}
 
-	/*for(int i = 1; i <= _H; i++)
+	/*for(int i = 1; i <= NUMGRIDH; i++)
 	{
 		//x[IX(0, i)] = b==2? 0 : x[IX(1,i)];
-		//x[IX(_W+1, i)] = b==2? 0 : x[IX(_W,i)];
+		//x[IX(NUMGRIDW+1, i)] = b==2? 0 : x[IX(NUMGRIDW,i)];
 		if(b != 1)
 		{
-			x[IX(_W+1, i)] = 0;
+			x[IX(NUMGRIDW+1, i)] = 0;
 			x[IX(0, i)] = 0;
 		}
 		else
 		{
-			x[IX(_W+1, i)] = x[IX(_W-1, i)] + x[IX(_W, i-1)] - x[IX(_W, i+1)];
+			x[IX(NUMGRIDW+1, i)] = x[IX(NUMGRIDW-1, i)] + x[IX(NUMGRIDW, i-1)] - x[IX(NUMGRIDW, i+1)];
 			x[IX(0, i)] = x[IX(2, i)] + x[IX(1, i+1)] - x[IX(1, i-1)];
 		}
  	}*/
 
 	x[IX(0, 0)] = 0.5 * (x[IX(1, 0)] + x[IX(0, 1)]);
-	x[IX(0, _H+1)] = 0.5 * (x[IX(1, _H+1)] + x[IX(0, _H)]);
-	x[IX(_W+1, 0)] = 0.5 * (x[IX(_W, 0)] + x[IX(_W+1, 1)]);
-	x[IX(_W+1, _H+1)] = 0.5 * (x[IX(_W, _H+1)] + x[IX(_W+1, _H)]);
+	x[IX(0, NUMGRIDH+1)] = 0.5 * (x[IX(1, NUMGRIDH+1)] + x[IX(0, NUMGRIDH)]);
+	x[IX(NUMGRIDW+1, 0)] = 0.5 * (x[IX(NUMGRIDW, 0)] + x[IX(NUMGRIDW+1, 1)]);
+	x[IX(NUMGRIDW+1, NUMGRIDH+1)] = 0.5 * (x[IX(NUMGRIDW, NUMGRIDH+1)] + x[IX(NUMGRIDW+1, NUMGRIDH)]);
 
 #endif
 }
@@ -696,9 +691,9 @@ void FluidCube2D::draw_dens()
 #ifdef VISBLEW
 	int W = VISBLEW;
 #else
-	int W = _W * GRIDSIZE;
+	int W = NUMGRIDW * GRIDSIZE;
 #endif
-	int H = _H * GRIDSIZE;
+	int H = NUMGRIDH * GRIDSIZE;
 	for(int i = 0; i < W; i++)
 		for(int j = 0; j < H; j++)
 		{
@@ -742,6 +737,9 @@ void FluidCube2D::draw_dens()
 				color = displayVec->getOutputTextureLIC(x, y, Vx_lic, Vy_lic);
 				glColor3f(color, color, color);
 			}
+			else if(mode == VELOCITY)
+				if(GRIDSIZE >= 5 && type[IX(x, y)] == FLUID)
+					draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
 			else
 				glColor3f(0, 0, 0);
 
@@ -760,10 +758,6 @@ void FluidCube2D::draw_dens()
 				glVertex2f(i*GRIDSIZE, (j+1)*GRIDSIZE);
 				glEnd();
 			}
-			
-
-			//if(GRIDSIZE >= 10 && type[IX(x, y)] == FLUID)
-			//	draw_velo(i, j, Vx[IX(x, y)], Vy[IX(x, y)]);
 		}
 	//displayVec->getOutputTextureLIC(55, 55, Vx, Vy);
 	//REPORT(max_w);
@@ -831,8 +825,8 @@ Eigen::Vector3f FluidCube2D::interpolate(float x, float y)
 
 void FluidCube2D::interpolateForLic()
 {
-	int H = _H * GRIDSIZE;
-	int W = _W * GRIDSIZE;
+	int H = NUMGRIDH * GRIDSIZE;
+	int W = NUMGRIDW * GRIDSIZE;
 
 	for(int y = 1; y <= H; y++)
 		for(int x = 1; x <= W; x++)
@@ -844,4 +838,3 @@ void FluidCube2D::interpolateForLic()
 			Vy_lic[IX2(x, y)] = res[2];
 		}
 }
-#endif

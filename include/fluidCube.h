@@ -1,12 +1,10 @@
 #ifndef _FLUID_H_
 #define _FLUID_H_
 
-#include "freeglut.h"
 #include "displayVec.h"
+#include <GL/freeglut.h>
 #include <vector>
 #include <Eigen/Eigen>
-
-#ifdef SIMULATION_2D
 
 struct Pos
 {
@@ -115,64 +113,4 @@ public:
 	void simulate(bool idle);
 	void setDisplayMode(DISPLAYMODE m) {mode = m; }
 };
-
-#else
-
-class FluidCube3D
-{
-private:
-	float h;
-	float dt;
-	float diff;
-	float visc;
-
-	float *d;
-	float *Vx;
-	float *Vy;
-	float *Vz;
-
-	float max_d;
-	float max_vx;
-	float max_vy;
-	float max_vz;
-
-public:
-	int size;
-	float *d0;
-	float *Vx0;
-	float *Vy0;
-	float *Vz0;
-
-private:
-	void dens_step(float *amount);
-	void addDensity(float *amount);
-	void diffuseDensity();
-	void advectDensity();
-	
-	void vel_step(float *amountX, float *amountY, float *amountZ);
-	void addVelocity(float *amountX, float *amountY, float *amountZ);
-	void diffuseVelosity();
-	void advectVelosity();
-	void projectVelosity();
-	
-	void add_source(float *x, float *amount);
-	void diffuse(int b, float *u0, float *u, float diffusion);
-	void advect(int b, float *u0, float *u);
-	void swap(float *x0, float *x);
-	void set_bnd(int b, float *x);
-
-	void draw_velo(int i, int j, int k, float vx, float vy, float vz);
-	void draw_grid();
-
-	void output(float *u);
-
-public:
-	FluidCube3D(float diffusion, float viscosity, float dt);
-	~FluidCube3D();
-	void simulate(bool idle);
-	void draw_dens();
-};
-
-#endif
-
 #endif

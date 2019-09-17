@@ -1,4 +1,3 @@
-//implement your drawing functions here
 #include "stdafx.h"
 #include "fluidCube.h"
 #include "display.h"
@@ -6,68 +5,11 @@
 #include <ctime>
 #include <cstdio>
 
-#ifdef SIMULATION_2D
-FluidCube2D *cube;
-#else
-FluidCube3D *cube;
-float ll = 2 * LENGTH, seita = 0, fai = 0;
-float px = ll * cosf(seita) * cosf(fai);
-float py = ll * sinf(seita);
-float pz = ll * cosf(seita) * sinf(fai);
-#endif
 
+FluidCube2D *cube;
 int count = 0;
 int wide, height;
 
-void initialize(){
-
-#ifdef SIMULATION_2D
-
-#ifdef VISBLEW
-	wide = VISBLEW;
-#else
-	wide = _W * GRIDSIZE + 20;
-#endif
-	height = _H * GRIDSIZE + 20;
-	cube = new FluidCube2D(DIFFUSION, VISCOSITY, TIMESTEP);
-
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE |GLUT_RGBA  | GLUT_STENCIL
-                      | GLUT_ACCUM);
-	glutInitWindowPosition(100, 100); //initial position of the window on the screen
-	glutInitWindowSize(wide, height);
-	glutCreateWindow("2D Fluid Simulation"); //create a window and set its focus
-
-	//for the current window, set the callback functions:
-	glutDisplayFunc(refresh); //infinite loop to draw on the window
-	glutTimerFunc(0, timer, 0);
-	//glutReshapeFunc(reshape); //called when the window is resized
-	glutMouseFunc(mouseClick); //called when the mouse is clicked in the window
-	glutKeyboardFunc(keyEvent); //called when a standard key is pressed
-	//glutMotionFunc(mouseDrag); //called when the mouse is dragged after being clicked
-
-#else 
-
-	cube = new FluidCube3D(DIFFUSION, VISCOSITY, TIMESTEP);
-
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE |GLUT_RGBA  | GLUT_STENCIL
-                      | GLUT_ACCUM);
-	glutInitWindowPosition(100, 100); //initial position of the window on the screen
-	glutInitWindowSize(800, 800);
-	glutCreateWindow("3D Fluid Simulation"); //create a window and set its focus
-
-	glutDisplayFunc(refresh); //infinite loop to draw on the window
-	glutTimerFunc(0, timer, 0);
-	glutReshapeFunc(reshape); //called when the window is resized
-	glutKeyboardFunc(keyEvent); //called when a standard key is pressed
-	glutSpecialFunc(specKeyEvent); //called when a special key is pressed (ie. enter);
-
-	srand(time(0));
-
-#endif
-	
-	//glutIdleFunc(refresh);
-	//glutPassiveMotionFunc(mouseMove); //called when the mouse moves (with/without click)
-}
 
 void reshape(int _w, int _h){
 	PRINT("start - reshape(" <<_w << "," << _h <<")");
@@ -101,10 +43,10 @@ void reshape(int _w, int _h){
 	PRINT("done - reshape(" <<_w << "," << _h <<")");
 }
 
-int lastx,lasty;
-#ifdef SIMULATION_2D
 
+int lastx, lasty;
 clock_t start;
+
 void mouseClick(int _button, int _state, int _x, int _y){
 	PRINT("mouseClick(" <<_button << "," << _state << "," << _x << "," << _y <<")");
 	if(_state)
@@ -139,6 +81,7 @@ void mouseClick(int _button, int _state, int _x, int _y){
 	}
 }
 
+
 void keyEvent(unsigned char _key, int _x, int _y){
 	
 	PRINT("keyEvent(" << _key << "," << _x << "," << _y <<")");
@@ -168,105 +111,14 @@ void keyEvent(unsigned char _key, int _x, int _y){
 	}
 }
 
-#else
-
-void keyEvent(unsigned char _key, int _x, int _y){
-	
-	PRINT("keyEvent(" << _key << "," << _x << "," << _y <<")");
-
-	switch (_key)
-	{
-		case 27:  // ESC
-			exit(0);
-			break;
-		case 'x':
-			seita = 0;
-			fai = 0;
-			ll = 2 * LENGTH;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		case 'y':
-			seita = PI / 2;
-			fai = 0;
-			ll = 2 * LENGTH;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		case 'z':
-			seita = 0; 
-			fai = PI / 2;
-			ll = 2 * LENGTH;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		default:
-			break;
-	}
-}
-
-void specKeyEvent(int _key, int _x, int _y){
-
-	float fraction = 0.01f * LENGTH;
-
-	PRINT("speckeyEvent(" << _key << "," << _x << "," << _y <<")");
-	switch (_key)
-	{
-		case GLUT_KEY_LEFT:
-			fai -= 0.01f;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		case GLUT_KEY_RIGHT:
-			fai += 0.01f;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		case GLUT_KEY_UP:
-			seita += 0.01f;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		case GLUT_KEY_DOWN:
-			seita -= 0.01f;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		case GLUT_KEY_PAGE_UP:
-			ll -= fraction;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		case GLUT_KEY_PAGE_DOWN:
-			ll += fraction;
-			px = ll * cosf(seita) * cosf(fai);
-			py = ll * sinf(seita);
-			pz = ll * cosf(seita) * sinf(fai);
-			break;
-		default:
-			break;
-	}
-	REPORT(ll);
-	REPORT(seita);
-	REPORT(fai);
-	cube->draw_dens();
-}
-
-#endif
 
 void mouseDrag(int _x, int _y){
 	PRINT("mouseDrag(" << _x << "," << _y <<"): displacement from click: (" << _x-lastx << "," << _y-lasty << ")");
 }
 
+
 void mouseMove(int _x, int _y){
+
 
 }
 void refresh(){
@@ -277,9 +129,8 @@ void refresh(){
 
 }
 
-void timer(int value) {
 
-#ifdef SIMULATION_2D
+void timer(int value) {
 
 	if(count %FLOWTIME == 0)
 	{
@@ -287,16 +138,16 @@ void timer(int value) {
 		memset(cube->Vx0, 0, sizeof(float) * cube->size);
 		memset(cube->Vy0, 0, sizeof(float) * cube->size);
 		
-		/*
-		for(int y = 1; y <= _H; y++)
-		{
-			cube->d0[IX(1, y)] = DENSITY;
-			cube->Vx0[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
-			//cube->Vy0[IX(1, y)] = 0;
-		}
-		*/
+		
+		// for(int y = 1; y <= NUMGRIDH; y++)
+		// {
+		// 	cube->d0[IX(1, y)] = DENSITY;
+		// 	cube->Vx0[IX(1, y)] = SPEED;  //10000~50000 for 2 vertexes
+		// 	//cube->Vy0[IX(1, y)] = 0;
+		// }
+		
 		float seita = (count % 30 + 75) / 180.0 * PI;
-		int x = _W/2, y = 5;
+		int x = NUMGRIDW/2, y = 5;
 		cube->d0[IX(x, y)] = DENSITY;
 		cube->Vx0[IX(x, y)] = SPEED * cosf(seita);
 		cube->Vy0[IX(x, y)] = SPEED * sinf(seita);
@@ -309,48 +160,37 @@ void timer(int value) {
 	}
 	if(count < 111)//385 for vortex street 
 		count ++;
-#else
-	//if(count == 5)
-	//{
-	//	count = 100;
-
-		memset(cube->d0, 0, sizeof(float) * cube->size);
-		memset(cube->Vx0, 0, sizeof(float) * cube->size);
-		memset(cube->Vy0, 0, sizeof(float) * cube->size);
-		memset(cube->Vz0, 0, sizeof(float) * cube->size);
-		
-		int xx = 20;//rand()%_N;
-		int yy = 20;//rand()%_N;
-		int zz = 20;//rand()%_N;
-		for(int k = 0; k <= 0; k++)
-			for(int j = 0; j <= 0; j++)
-				for(int i = 0; i <= 0; i++ )
-				{
-					int x = xx + i;
-					int y = yy + j;
-					int z = zz + k;
-					if(x < 1 || x > _N)
-						continue;
-					if(y < 1 || y > _N)
-						continue;
-					if(z < 1 || z > _N)
-						continue;
-					cube->d0[IX(x, y, z)] = 100000;
-					cube->Vx0[IX(x, y, z)] = 0;
-					cube->Vy0[IX(x, y, z)] = 0;
-					cube->Vz0[IX(x, y, z)] = 10000;
-				}
-		cube->simulate(false);
-	//}
-	//else
-	//{
-	//	count ++;
-	//	glutPostRedisplay();
-	//}
-//#else
-	//glutPostRedisplay(); // Post re-paint request to activate display()
-#endif	
 
 	//glutPostRedisplay();
 	glutTimerFunc(0, timer, 0); // next timer call milliseconds later
+}
+
+
+void initialize(){
+
+#ifdef VISBLEW
+	wide = VISBLEW;
+#else
+	wide = NUMGRIDW * GRIDSIZE + 20;
+#endif
+
+	height = NUMGRIDH * GRIDSIZE + 20;
+	cube = new FluidCube2D(DIFFUSION, VISCOSITY, TIMESTEP);
+
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE |GLUT_RGBA  | GLUT_STENCIL
+                      | GLUT_ACCUM);
+	glutInitWindowPosition(100, 100); //initial position of the window on the screen
+	glutInitWindowSize(wide, height);
+	glutCreateWindow("2D Fluid Simulation"); //create a window and set its focus
+
+	//for the current window, set the callback functions:
+	glutDisplayFunc(refresh); //infinite loop to draw on the window
+	glutTimerFunc(0, timer, 0);
+	//glutReshapeFunc(reshape); //called when the window is resized
+	glutMouseFunc(mouseClick); //called when the mouse is clicked in the window
+	glutKeyboardFunc(keyEvent); //called when a standard key is pressed
+	//glutMotionFunc(mouseDrag); //called when the mouse is dragged after being clicked
+
+	//glutIdleFunc(refresh);
+	//glutPassiveMotionFunc(mouseMove); //called when the mouse moves (with/without click)
 }
